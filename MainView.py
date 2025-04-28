@@ -3,7 +3,7 @@ import os
 from PyQt6.QtGui import QColor, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, \
 	QLabel, QLineEdit, QMessageBox, QPushButton, QSizePolicy, QSpacerItem, QSpinBox, QStatusBar, QTextEdit
-from PyQt6.QtCore import QLineF, QPoint, QRect, QRectF, Qt
+from PyQt6.QtCore import QDir, QLineF, QPoint, QRect, QRectF, Qt
 
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QGraphicsView, QGraphicsScene,
@@ -576,7 +576,6 @@ class TableDetectionWindow(QMainWindow):
 		self.line_buttons.append(horizontal_btn)
 
 		self.widgetLayout.addLayout(main_layout)
-		print("end -------------------")
 
 	def init_save_convertor_toolbar(self):
 		main_layout = QVBoxLayout()
@@ -984,7 +983,6 @@ class TableDetectionWindow(QMainWindow):
 		self.setMode(pre_mode="view", mode="view")
 		print("end initRect")
 
-
 	def initTableStructure(self):
 		print("enter initTableStructure")
 		rows = LinesUtil.identify_rows(self.detector.table_info, 25)
@@ -1116,6 +1114,13 @@ class TableDetectionWindow(QMainWindow):
 		# 打开文件选择对话框，只允许选择图片
 		file_dialog = QFileDialog()
 		file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")  # 设置过滤器，只显示图片文件
+		directory_path = "./trans"
+
+		# 检查目录是否存在
+		if QDir(directory_path).exists():
+			file_dialog.setDirectory(directory_path)
+		else:
+			file_dialog.setDirectory(QDir.currentPath())
 
 		if file_dialog.exec():
 			selected_files = file_dialog.selectedFiles()
@@ -1177,6 +1182,10 @@ class TableDetectionWindow(QMainWindow):
 								pen = QPen(QColor(Qt.GlobalColor.black))
 								pen.setWidth(2)
 								item.setPen(pen)
+
+		select_items = self.scene.selectedItems()
+		if len(select_items) == 0:
+			self.selected_item = None
 
 	# self.scene.clearSelection()
 	def set_button_style(self, mode):
@@ -1479,22 +1488,23 @@ class TableDetectionWindow(QMainWindow):
 		except ValueError:
 			QMessageBox.warning(self, "输入错误", "请输入有效的数字")
 			return
+		if self.scene is not None:
+			selected_rects = [
+				item for item in self.scene.selectedItems()
+				if isinstance(item, MovableRectItem)
+			]
 
-		selected_rects = [
-			item for item in self.scene.selectedItems()
-			if isinstance(item, MovableRectItem)
-		]
+			if not selected_rects:
+				QMessageBox.information(self, "提示", "请先选择要调整的矩形")
+				return
 
-		if not selected_rects:
-			QMessageBox.information(self, "提示", "请先选择要调整的矩形")
-			return
+			for rect in selected_rects:
+				rect.reSize(width, height)
 
-		for rect in selected_rects:
-			rect.reSize(width, height)
-
-		self.scene.clearSelection()
-		self.scene.update()  # 刷新场景
-
+			self.scene.update()  # 刷新场景
+		else:
+			QMessageBox.warning(self,"操作提示","请先选择一张图片!")
+			
 	def adjust_rect_size_step(self, dimension, operation):
 		print("enter adjust_rect_size_step")
 		"""调整矩形尺寸"""
@@ -1730,7 +1740,6 @@ class TableDetectionWindow(QMainWindow):
 							self.path_label.setText(self.script_dir + "\\out_pdf\\" + self.file_name.text())
 						else:
 							QMessageBox.information(self, "消息提示", "格式转换失败", )
-					print(f"选择的文件路径: {file_path}")
 				elif file_ext == ".html":
 					Convertor.convert_to_pdf(file_path, 2)
 				else:
@@ -1913,5 +1922,3 @@ if __name__ == "__main__":
 	window.initUI()
 	window.show()
 	sys.exit(app.exec())
-
-

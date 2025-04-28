@@ -7,7 +7,7 @@ from project.LinesUtil import LinesUtil
 
 
 class MovableRectItem(QGraphicsRectItem):
-	def __init__(self, text="文本(双击进行编辑)", rect=None, parent=None):
+	def __init__(self, text="文本", rect=None, parent=None):
 		if rect is None:
 			super().__init__(parent)  # 默认方框尺寸80x60
 		else:
@@ -24,7 +24,7 @@ class MovableRectItem(QGraphicsRectItem):
 		self.text_item.setDefaultTextColor(Qt.GlobalColor.blue)
 
 		font = QFont()
-		font.setPointSize(14)  # 字体大小（单位：点）
+		font.setPointSize(12)  # 字体大小（单位：点）
 		font.setWeight(QFont.Weight.Medium)  # PyQt6 必须使用 QFont.Weight 枚举
 		self.text_item.setFont(font)
 
@@ -70,7 +70,6 @@ class MovableRectItem(QGraphicsRectItem):
 		self.setRect(new_rect)
 
 	def setViewText(self, text):
-		print("enter setViewText")
 		if len(text) <= 3:
 			self.viewText = text
 		# 160->8个汉字 16个英文字母
@@ -88,4 +87,3 @@ class MovableRectItem(QGraphicsRectItem):
 				self.viewText = text
 
 		self.text_item.setPlainText(self.viewText)
-		print("end setViewText")
