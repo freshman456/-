@@ -32,7 +32,6 @@ class Block:
 		self.clear_data()
 		# 提取文本块信息
 		self.data = result[0]  # 假设只处理第一张图片的结果
-		# self.printData()
 		# 按文本块的垂直位置（y 坐标）排序
 		self.data.sort(key=lambda block: block[0][0][1])  # 按第一个点的 y 坐标排序
 		# 存储每一行的数据
