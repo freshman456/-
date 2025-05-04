@@ -3,7 +3,7 @@ from PyQt6.QtGui import QPainterPath, QPainterPathStroker, QPen
 from PyQt6.QtWidgets import QGraphicsLineItem, QGraphicsRectItem, QGraphicsView, QLabel
 from matplotlib.hatch import SouthEastHatch
 
-from project.BackgroundScene import BackgroundScene
+from project.CustomizeScene import CustomizeScene
 from project.MovableRectItem import MovableRectItem
 
 
@@ -24,7 +24,7 @@ class VisualizedView(QGraphicsView):
 	def mousePressEvent(self, event):
 		if event.button() == Qt.MouseButton.LeftButton:
 			self.current_scene = self.scene()
-			if isinstance(self.current_scene, BackgroundScene):
+			if isinstance(self.current_scene, CustomizeScene):
 				if "box" == self.current_scene.current_mode:
 					point = self.mapToScene(event.pos())
 					self.start_point = self.mapToScene(event.pos())
@@ -41,7 +41,7 @@ class VisualizedView(QGraphicsView):
 		scene_pos = self.mapToScene(view_pos)
 		# 更新标签显示场景坐标
 		self.scene_coord_label.setText(f"Scene 坐标: ({scene_pos.x():.2f}, {scene_pos.y():.2f})")
-		if isinstance(self.current_scene, BackgroundScene):
+		if isinstance(self.current_scene, CustomizeScene):
 			if self.current_rect_item is not None:
 				end_point = self.mapToScene(event.pos())
 				rect = QRectF(self.start_point, end_point).normalized()

@@ -7,6 +7,4 @@ class CellS:
 		self.row=None
 		self.bold=False
 		self.italic=False
-		self.colSpan=None
-		self.rowSpan=None
 		self.size=None

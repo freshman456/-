@@ -15,7 +15,7 @@ from project.MovableLineItem import MovableLineItem
 from project.table_convertor import Convertor
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
-class BackgroundScene(QGraphicsScene):
+class CustomizeScene(QGraphicsScene):
 	sceneClickedSignal = pyqtSignal()  # 自定义信号
 	editSignal = pyqtSignal()
 	endLineSignal = pyqtSignal()
@@ -262,11 +262,11 @@ class BackgroundScene(QGraphicsScene):
 				lines = cell_content.split('\n')
 				for line in lines:
 					width = stringWidth(line, font_name, font_size)
+					print(width)
 					if width > max_width:
 						max_width = width
 			# 列宽 = 最大文字宽度 + 左右边距
 			col_widths.append(max_width + 2 * padding)
-
 
 		# ------------------------- 计算行高-------------------------
 		row_heights = []
@@ -426,7 +426,7 @@ class BackgroundScene(QGraphicsScene):
 			self.cells = [["" for _ in range(cols)] for _ in range(rows)]
 			for item in self.rect_items:
 				if item.row and item.col:
-					self.cells[item.row - 1][item.col - 1] += item.text
+					self.cells[item.row - 1][item.col - 1] += item.text+'\n'
 
 	def exportHtml5Table(self, file_name="output.html", special=True):
 		self.getRowAndCol()
@@ -439,7 +439,7 @@ class BackgroundScene(QGraphicsScene):
 				'  <meta charset="UTF-8">',
 				'  <title>导出表格</title>',
 				'  <style>',
-				'    table { '
+				'    block_detector { '
 				'              border-collapse: collapse; '
 				'              width: 60%;'
 				'              margin:20px auto;'
@@ -462,7 +462,7 @@ class BackgroundScene(QGraphicsScene):
 				'  </style>',
 				'</head>',
 				'<body>',
-				'  <table>',
+				'  <block_detector>',
 				'    <thead>',
 				'      <tr>'
 			])
@@ -483,7 +483,7 @@ class BackgroundScene(QGraphicsScene):
 
 				# 闭合标签
 				html.extend([
-					'  </table>',
+					'  </block_detector>',
 					'</body>',
 					'</html>'
 				])
@@ -510,7 +510,6 @@ class BackgroundScene(QGraphicsScene):
 		self.export_flag = False
 		self.draw_mode = None
 		self.current_line = None
-		# self.start_point = None
 		self.col_lines.clear()
 		self.row_lines.clear()
 		self.bias_lines.clear()

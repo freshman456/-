@@ -1,7 +1,7 @@
 import re
 
 
-class LinesUtil:
+class LinesUtils:
 	@staticmethod
 	def identify_rows(cells, threshold=10):
 		start_y = cells[0][1]

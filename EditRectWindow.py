@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QKeySequence
 from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
-from LinesUtil import LinesUtil
+from LinesUtils import LinesUtils
 
 
 class EditRectWindow(QWidget):
@@ -162,7 +162,7 @@ class EditRectWindow(QWidget):
 		# 160->8个汉字 16个英文字母
 		else:
 			width = self.w_line
-			res = LinesUtil.count_chinese_and_non_chinese_regex(text)
+			res = LinesUtils.count_chinese_and_non_chinese_regex(text)
 			max_len = int(width / 160.0 * 8)
 			if res > max_len:
 				self.viewText = text[:max_len - 3]
