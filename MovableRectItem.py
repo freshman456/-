@@ -3,7 +3,7 @@ from PyQt6.QtGui import QBrush, QFont, QPainter
 from PyQt6.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem, QLabel
 import re
 
-from project.LinesUtil import LinesUtil
+from project.LinesUtils import LinesUtils
 
 
 class MovableRectItem(QGraphicsRectItem):
@@ -75,7 +75,7 @@ class MovableRectItem(QGraphicsRectItem):
 		# 160->8个汉字 16个英文字母
 		else:
 			width = self.rect().width()
-			res = LinesUtil.count_chinese_and_non_chinese_regex(text)
+			res = LinesUtils.count_chinese_and_non_chinese_regex(text)
 			max_len = int(width * 8 / 160.0 )
 			if res > max_len:
 				self.viewText = text[:max_len - 3]

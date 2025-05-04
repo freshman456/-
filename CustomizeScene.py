@@ -1,7 +1,7 @@
 import os
 
 from PyQt6.QtCore import QLineF, QMarginsF, QRect, Qt, pyqtSignal
-from PyQt6.QtGui import  QPageSize, QPainter, QPen
+from PyQt6.QtGui import QPageSize, QPainter, QPen
 from PyQt6.QtPrintSupport import QPrinter
 from PyQt6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsScene
 from docx import Document
@@ -15,7 +15,8 @@ from project.MovableLineItem import MovableLineItem
 from project.table_convertor import Convertor
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
-class BackgroundScene(QGraphicsScene):
+
+class CustomizeScene(QGraphicsScene):
 	sceneClickedSignal = pyqtSignal()  # 自定义信号
 	editSignal = pyqtSignal()
 	endLineSignal = pyqtSignal()
@@ -28,8 +29,8 @@ class BackgroundScene(QGraphicsScene):
 		self.current_mode = None
 		self.background_pixmap = None
 		self.export_flag = False
-		self.draw_mode = None
-		self.current_line = None
+		# self.draw_mode = None
+		# self.current_line = None
 		self.col_lines = []
 		self.row_lines = []
 		self.bias_lines = []
@@ -40,7 +41,7 @@ class BackgroundScene(QGraphicsScene):
 		self.special_col_lines = []
 		self.special_row_lines = []
 
-	def setBackgroundPixmap(self, pixmap):
+	def set_background_pixmap(self, pixmap):
 		self.background_pixmap = pixmap
 		rect = self.background_pixmap.rect()
 		c1 = int(self.sceneRect().width() / 2)
@@ -55,20 +56,18 @@ class BackgroundScene(QGraphicsScene):
 		# 绘制背景图片
 		if self.background_pixmap is not None and self.export_flag is False:
 			rect = self.background_pixmap.rect()
-			c1 = int(self.sceneRect().width() / 2)
-			c2 = int(self.sceneRect().height() / 2)
-			x = int(rect.width() / 2)
-			y = int(rect.height() / 2)
-			# self.start_point_x = int(c1-x)
-			# self.start_point_y = int(c2-y)
+			# c1 = int(self.sceneRect().width() / 2)
+			# c2 = int(self.sceneRect().height() / 2)
+			# x = int(rect.width() / 2)
+			# y = int(rect.height() / 2)
+			# # self.start_point_x = int(c1-x)
+			# # self.start_point_y = int(c2-y)
 			rect = QRect(self.start_point_x, self.start_point_y, rect.width(), rect.height())
 			painter.drawPixmap(rect, self.background_pixmap, self.background_pixmap.rect())
 
 	def mousePressEvent(self, event):
 		super().mousePressEvent(event)
 		if event.button() == Qt.MouseButton.LeftButton:
-			# if self.current_mode == "box":
-			# elif self.current_mode == "line":
 			if self.current_mode == "line":
 				# 开始绘制线条
 				self.start_pos = event.scenePos()
@@ -118,11 +117,11 @@ class BackgroundScene(QGraphicsScene):
 			# 完成线条绘制
 			self.drawing_line = None
 			self.start_pos = None
-			self.setLineSelectable()
+			self.set_line_selectable()
 			self.endLineSignal.emit()
 		super().mouseReleaseEvent(event)
 
-	def setLineSelectable(self):
+	def set_line_selectable(self):
 		if self.col_lines:
 			for line in self.col_lines:
 				line.setFlag(QGraphicsLineItem.GraphicsItemFlag.ItemIsSelectable, True)
@@ -133,7 +132,7 @@ class BackgroundScene(QGraphicsScene):
 			for line in self.bias_lines:
 				line.setFlag(QGraphicsLineItem.GraphicsItemFlag.ItemIsSelectable, True)
 
-	def setLinesNotMov(self):
+	def set_lines_not_mov(self):
 		if self.col_lines:
 			for line in self.col_lines:
 				line.setFlag(QGraphicsLineItem.GraphicsItemFlag.ItemIsMovable, False)
@@ -150,9 +149,9 @@ class BackgroundScene(QGraphicsScene):
 			for line in self.special_row_lines:
 				line.setFlag(QGraphicsLineItem.GraphicsItemFlag.ItemIsMovable, False)
 
-	def exportPDF(self, standard=False,file_name = "output.pdf"):
+	def export_pdf(self, standard=False, file_name="output.pdf"):
 		if standard:
-			self.getRowAndCol()
+			self.get_row_and_col()
 			return self.create_standard_pdf_table(file_name=file_name)
 		else:
 			self.scene_border.setPen(QPen(Qt.GlobalColor.transparent, 2))
@@ -198,7 +197,6 @@ class BackgroundScene(QGraphicsScene):
 				page_rect = printer.pageRect(QPrinter.Unit.Point)  # 显式指定单位为点
 
 				# 计算缩放比例，确保内容完全适应页面
-				print(page_rect.width(), page_rect.height())
 				scale_factor = min(
 					page_rect.width() / scene_rect.width(),  # 595/900 ≈ 0.661
 					page_rect.height() / scene_rect.height()  # 842/740 ≈ 1.138
@@ -236,7 +234,7 @@ class BackgroundScene(QGraphicsScene):
 						line.setPen(QPen(Qt.GlobalColor.red, 2))
 			return True
 
-	def create_standard_pdf_table(self,file_name="output.pdf"):
+	def create_standard_pdf_table(self, file_name="output.pdf"):
 		Convertor.register_font()
 		folder_path = r"./output_pdf"
 		print(self.cells)
@@ -266,7 +264,6 @@ class BackgroundScene(QGraphicsScene):
 						max_width = width
 			# 列宽 = 最大文字宽度 + 左右边距
 			col_widths.append(max_width + 2 * padding)
-
 
 		# ------------------------- 计算行高-------------------------
 		row_heights = []
@@ -315,8 +312,8 @@ class BackgroundScene(QGraphicsScene):
 		doc.build(elements)
 		return True
 
-	def exportWord(self,file_name="output.docx"):
-		self.getRowAndCol()
+	def export_word(self, file_name="output.docx"):
+		self.get_row_and_col()
 		widths = []
 		length = len(self.col_lines)
 		index = 0
@@ -384,15 +381,15 @@ class BackgroundScene(QGraphicsScene):
 			return False
 		return True
 
-	def getRowAndCol(self):
+	def get_row_and_col(self):
 		if self.rect_items is not None:
 			if len(self.col_lines) >= 2:
 				for line in self.col_lines:
-					line.getCorrectPosX()
+					line.get_correct_pos_x()
 
 			if len(self.row_lines) >= 2:
 				for line in self.row_lines:
-					line.getCorrectPosY()
+					line.get_correct_pos_y()
 			col_points = []
 			cols = 0
 			for line in self.col_lines:
@@ -406,6 +403,10 @@ class BackgroundScene(QGraphicsScene):
 				row_points.append(line.point_y)
 			if row_points:
 				rows = len(row_points) - 1
+
+			col_points.sort()
+			row_points.sort()
+
 			for rect in self.rect_items:
 				pos = rect.scenePos()
 				border = rect.rect()
@@ -422,14 +423,13 @@ class BackgroundScene(QGraphicsScene):
 				if index < len(row_points) and y < row_points[index]:
 					rect.row = index
 
-
 			self.cells = [["" for _ in range(cols)] for _ in range(rows)]
 			for item in self.rect_items:
 				if item.row and item.col:
-					self.cells[item.row - 1][item.col - 1] += item.text
+					self.cells[item.row - 1][item.col - 1] += item.text + '\n'
 
-	def exportHtml5Table(self, file_name="output.html", special=True):
-		self.getRowAndCol()
+	def export_html5_table(self, file_name="output.html", special=True):
+		self.get_row_and_col()
 		if self.cells and len(self.row_lines) >= 2 and len(self.col_lines) >= 2:
 			# 构建 HTML5 内容
 			html = [
@@ -439,7 +439,7 @@ class BackgroundScene(QGraphicsScene):
 				'  <meta charset="UTF-8">',
 				'  <title>导出表格</title>',
 				'  <style>',
-				'    table { '
+				'    block_detector { '
 				'              border-collapse: collapse; '
 				'              width: 60%;'
 				'              margin:20px auto;'
@@ -462,7 +462,7 @@ class BackgroundScene(QGraphicsScene):
 				'  </style>',
 				'</head>',
 				'<body>',
-				'  <table>',
+				'  <block_detector>',
 				'    <thead>',
 				'      <tr>'
 			])
@@ -483,7 +483,7 @@ class BackgroundScene(QGraphicsScene):
 
 				# 闭合标签
 				html.extend([
-					'  </table>',
+					'  </block_detector>',
 					'</body>',
 					'</html>'
 				])
@@ -508,9 +508,8 @@ class BackgroundScene(QGraphicsScene):
 		self.current_mode = None
 		self.background_pixmap = None
 		self.export_flag = False
-		self.draw_mode = None
-		self.current_line = None
-		# self.start_point = None
+		# self.draw_mode = None
+		# self.current_line = None
 		self.col_lines.clear()
 		self.row_lines.clear()
 		self.bias_lines.clear()

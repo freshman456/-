@@ -1,7 +1,7 @@
 from rapid_table import RapidTable, RapidTableInput
 
 
-class RectDetection:
+class StructureDetection:
 	def __init__(self):
 		input_args = RapidTableInput(
 			model_type="slanet_plus",  # 选择模型类型
@@ -24,6 +24,6 @@ class RectDetection:
 			rounded_row = [round(num, 2) for num in row]
 			rounded_table_info.append(rounded_row)
 
-		# 将结果赋值回 self.detector.table_info
+		# 将结果赋值回 self.structure_detector.table_info
 		self.table_info = rounded_table_info
 		print("end detect rect")

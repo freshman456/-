@@ -1,5 +1,10 @@
 import html
 import os
+
+import docx
+from docx.enum.section import WD_ORIENT
+from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from lxml import html as xhtml
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -7,7 +12,7 @@ from bs4 import BeautifulSoup
 import pdfkit
 import pdfplumber
 from docx import Document
-from docx.shared import RGBColor
+from docx.shared import Inches, Pt, RGBColor
 from reportlab import rl_config
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -19,14 +24,15 @@ from docx2pdf import convert
 from project.CellS import CellS
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
+
 class Convertor:
 	@staticmethod
-	def convert_to_pdf(file_path, mode, file_name="html_to_pdf.pdf"):
+	def convert_to_pdf(file_path, mode, file_name="to_pdf.pdf"):
 		if mode == 1:
 			doc = Document(file_path)
 			table = doc.tables[0]
-			rows = len(table.rows)
-			columns = len(table.columns)
+			# rows = len(block_detector.rows)
+			# columns = len(block_detector.columns)
 			list_cells = []
 			texts = []
 			for row_idx, row in enumerate(table.rows):
@@ -38,14 +44,12 @@ class Convertor:
 					# 记录单元格的行列位置
 					cells.row = row_idx + 1
 					cells.col = cell_idx + 1
-					# cells.colSpan = is_grid_span(cell)
 					row_cells.append(cells)  # 所有行的单元格对象
 					text.append(cell.text.strip())
 				# 存储提取到的文本和该行单元格信息
 				list_cells.append(row_cells)
 				texts.append(text)
-			# print(texts)
-			Convertor.pdf_convertor(list_cells, texts, columns, rows)
+			Convertor.pdf_convertor(list_cells, texts, file_name=file_name)
 			return True
 		elif mode == 2:
 			try:
@@ -131,25 +135,18 @@ class Convertor:
 				safe_name = safe_name[:30]  # 限制长度
 				# 尝试注册字体
 				pdfmetrics.registerFont(TTFont(safe_name, font_path))
-			# print(f"字体 '{safe_name}' 注册成功")
 			except Exception as e:
 				pass  # 截断错误信息避免过长
 
 	@staticmethod
-	def pdf_convertor(list_cells, texts, column, row, output_filename="word_to_pdf.pdf"):
+	def pdf_convertor(list_cells, texts, file_name="word_to_pdf.pdf"):
 
 		Convertor.register_font()
 		# 获取所有已注册的字体名称
-		# argW = []
-		# argH = []
-		# # 创建PDF文档的行高和行宽列表
-		# for i in range(column):
-		# 	argW.append(80)
-		# for i in range(row):
-		# 	argH.append(40)
+
 		font_name = "simhei"
 		font_size = 11
-		padding = 4
+		padding = 12
 		col_widths = []
 		# 获取字符串宽度函数
 
@@ -171,39 +168,35 @@ class Convertor:
 		# ------------------------- 计算行高 -------------------------
 		row_heights = []
 		line_height = font_size * 1.2  # 单行高度（含行距）
+		padding = 8  # 上下边距各 8pt
+
 		for row in texts:
-			max_lines = 1
+			max_lines = 1  # 最小行数为 1
 			for cell in row:
 				cell_content = str(cell)
-				lines = cell_content.split('\n')
-				# 根据列宽计算自动换行后的行数
-				for col_idx, content in enumerate(cell):
-					lines = []
-					current_line = []
-					current_width = 0
-					for word in content.split():
-						word_width = stringWidth(word, font_name, font_size)
-						if current_width + word_width > col_widths[col_idx]:
-							lines.append(' '.join(current_line))
-							current_line = [word]
-							current_width = word_width
-						else:
-							current_line.append(word)
-							current_width += word_width + stringWidth(' ', font_name, font_size)
-					lines.append(' '.join(current_line))
-					line_count = len(lines)
-					if line_count > max_lines:
-						max_lines = line_count
+				# 关键修复：直接使用 split('\n') 的显式换行符分割结果
+				explicit_lines = cell_content.split('\n')  # 显式换行符分割的行数
+				line_count = len(explicit_lines)
+
+				# 计算自动换行（根据列宽和文字长度）
+				if col_widths is not None:  # 需要先计算列宽
+					col_idx = row.index(cell)  # 获取当前单元格的列索引
+					col_width = col_widths[col_idx] - 2 * padding  # 可用宽度
+					# 计算自动换行后的行数（根据字体宽度）
+					text_width = stringWidth(cell_content.replace('\n', ' '), font_name, font_size)
+					if text_width > col_width:
+						auto_line_count = int(text_width / col_width) + 1
+						line_count = max(line_count, auto_line_count)
+
+				if line_count > max_lines:
+					max_lines = line_count
+
 			# 行高 = 行数 * 单行高度 + 上下边距
 			row_heights.append(max_lines * line_height + 2 * padding)
 
-		print("*******************")
-		print(row_heights)
-		print(col_widths)
-		print("*******************")
 		folder_path = r"./output_pdf"
 		os.makedirs(folder_path, exist_ok=True)
-		full_path = os.path.join(folder_path, output_filename)
+		full_path = os.path.join(folder_path, file_name)
 
 		doc = SimpleDocTemplate(full_path, pagesize=A4)
 		table = Table(texts, colWidths=col_widths, rowHeights=row_heights)
@@ -253,7 +246,7 @@ class Convertor:
 		           align-items: center;
 		       }
 
-		       .table-container {
+		       .block_detector-container {
 		           background: white;
 		           border-radius: 12px;
 		           box-shadow: 0 8px 24px rgba(0,0,0,0.05);
@@ -262,13 +255,13 @@ class Convertor:
 		           max-width: 90vw;
 		       }
 
-		       .data-table {
+		       .data-block_detector {
 		           border-collapse: collapse;
 		           width: auto;
 		           min-width: 600px;
 		       }
 
-		       .data-table td {
+		       .data-block_detector td {
 		           padding: 14px 20px;
 		           border: 1px solid #e4e7ed;
 		           transition: all 0.2s ease;
@@ -278,11 +271,11 @@ class Convertor:
 		           line-height: 1.5;
 		       }
 
-		       .data-table tr:nth-child(even) td {
+		       .data-block_detector tr:nth-child(even) td {
 		           background-color: #f8f9fa;
 		       }
 
-		       .data-table tr:hover td {
+		       .data-block_detector tr:hover td {
 		           background-color: #f5f7fa;
 		           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 		       }
@@ -296,8 +289,8 @@ class Convertor:
 		html_lines.append('</style>')
 		html_lines.append('</head>')
 		html_lines.append('<body>')
-		html_lines.append('<div class="table-container">')
-		html_lines.append('<table class="data-table">')
+		html_lines.append('<div class="block_detector-container">')
+		html_lines.append('<block_detector class="data-block_detector">')
 
 		for row_cells in list_cells:
 			html_lines.append('<tr>')
@@ -325,11 +318,31 @@ class Convertor:
 				html_lines.append(f'<td {" ".join(attrs)}>{text}</td>')
 			html_lines.append('</tr>')
 
-		html_lines.append('</table>')
+		html_lines.append('</block_detector>')
 		html_lines.append('</div>')
 		html_lines.append('</body>')
 		html_lines.append('</html>')
 		return '\n'.join(html_lines)
+
+	@staticmethod
+	def fix_table_borders(element):
+		if element.type == "block_detector":
+			# 删除无效的横线（如 "-----"）
+			for row in element.cells:
+				for cell in row:
+					# 清除包含分隔符的文本
+					if "-----" in cell.text:
+						cell.text = cell.text.replace("-----", "").strip()
+			# 设置统一的表格边框
+			for row in element.cells:
+				for cell in row:
+					cell.border_color = (0, 0, 0)  # 黑色边框
+					cell.border_width = 2  # 1磅宽度
+					# 设置垂直对齐为顶端
+					cell.vertical_alignment = "top"  # ✅ 关键参数
+					# 设置水平对齐为左对齐
+					cell.horizontal_alignment = "left"
+		return element
 
 	@staticmethod
 	def convert_to_word(file_path, mode, file_name="to_word.docx"):
@@ -338,8 +351,53 @@ class Convertor:
 			folder_path = r"./output_word"
 			os.makedirs(folder_path, exist_ok=True)
 			full_path = os.path.join(folder_path, file_name)
-			cv.convert(full_path)
+			cv.convert(full_path,
+			           layout_engine="balanced",
+			           process_func=Convertor.fix_table_borders)  # 紧凑模式，减少空白分割)
 			cv.close()
+			doc = Document(full_path)
+
+			# 遍历所有表格
+			for table in doc.tables:
+				# ------------ 设置表格整体属性 ------------
+				table.autofit = True  # 开启自动调整
+				table.alignment = WD_TABLE_ALIGNMENT.CENTER  # 表格居中
+				table.width = Inches(7.5)  # 根据页边距计算宽度（A4宽8.27-左右边距0.8*2=6.67，适当留白）
+
+				# ------------ 设置单元格样式 ------------
+				for row in table.rows:
+					for cell in row.cells:
+						# 文本垂直对齐：顶端对齐
+						cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
+						# 文本水平对齐：左对齐
+						for paragraph in cell.paragraphs:
+							paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+						# ------------ 设置表格边框 ------------
+						tc = cell._tc
+						tcPr = tc.get_or_add_tcPr()
+						# 设置宽度自适应
+						tcW = OxmlElement('w:tcW')
+						tcW.set(qn('w:w'), '0')
+						tcW.set(qn('w:type'), 'auto')
+						tcPr.append(tcW)
+
+						# 允许文本换行
+						no_wrap = OxmlElement('w:noWrap')
+						no_wrap.set(qn('w:val'), '0')
+						tcPr.append(no_wrap)
+						tcBorders = docx.oxml.OxmlElement('w:tcBorders')
+						# 设置边框（四个方向）
+						for border_name in ['top', 'left', 'bottom', 'right']:
+							border = docx.oxml.OxmlElement(f'w:{border_name}')
+							border.set(docx.oxml.ns.qn('w:val'), 'single')
+							border.set(docx.oxml.ns.qn('w:sz'), '4')  # 1pt = 2*4
+							border.set(docx.oxml.ns.qn('w:color'), '000000')
+							tcBorders.append(border)
+						tcPr.append(tcBorders)
+
+			# 保存修改后的文档
+			doc.save(full_path)
 			return True
 		elif mode == 2:
 			try:
@@ -348,7 +406,7 @@ class Convertor:
 				# 使用lxml解析HTML
 				tree = xhtml.fromstring(html_content)
 				# 提取所有表格
-				tables = tree.xpath('//table')
+				tables = tree.xpath('//block_detector')
 				# 如果有多个表格，可以选择第一个或全部
 				if tables:
 					# 提取第一个表格
@@ -357,7 +415,7 @@ class Convertor:
 					table_html = xhtml.tostring(table, encoding='unicode')
 					# 使用BeautifulSoup解析HTML表格
 					soup = BeautifulSoup(table_html, 'lxml')
-					table = soup.find('table')
+					table = soup.find('block_detector')
 					rows = table.find_all('tr')
 					# 创建Word文档
 					doc = Document()
@@ -389,7 +447,7 @@ class Convertor:
 							word_row[i].text = cell.get_text()
 					# 调整表格列宽（可选）
 					for column in word_table.columns:
-						column.width = 2000000  # 设置列宽为2厘米（2000000 twips）
+						column.width = 1000000  # 设置列宽为2厘米（2000000 twips）
 
 					# 保存Word文档
 					folder_path = r".\output_word"
@@ -444,41 +502,41 @@ class Convertor:
 			<head>
 			    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 			    <style>
-			        .data-table {{
+			        .data-block_detector {{
 			            width: 80%;
 			            margin: 20px auto;
 			            border-collapse: collapse;
 			            font-family: Arial, sans-serif;
 			            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 			        }}
-			        .data-table td, .data-table th {{
+			        .data-block_detector td, .data-block_detector th {{
 			            padding: 12px 15px;
 			            text-align: center;
 			            border: 1px solid #ddd;
 			        }}
-			        .data-table tbody tr:nth-child(even) {{
+			        .data-block_detector tbody tr:nth-child(even) {{
 			            background-color: #f9f9f9;
 			        }}
-			        .data-table tbody tr:hover {{
+			        .data-block_detector tbody tr:hover {{
 			            background-color: #f1f1f1;
 			            transition: background-color 0.3s;
 			        }}
-			        .table-container {{
+			        .block_detector-container {{
 			            width: 100%;
 			            overflow-x: auto;
 			        }}
 			    </style>
 			</head>
 			<body>
-			    <div class="table-container">
-			        <table class="data-table">
+			    <div class="block_detector-container">
+			        <block_detector class="data-block_detector">
 			            <tbody>
 			                {''.join(
 				f'<tr>{"".join(f"<td>{html.escape(str(cell))}</td>" for cell in row)}</tr>'
 				for row in table
 			)}
 			            </tbody>
-			        </table>
+			        </block_detector>
 			    </div>
 			</body>
 			</html>
@@ -503,4 +561,3 @@ class Convertor:
 			return True
 		except Exception as e:
 			return False
-

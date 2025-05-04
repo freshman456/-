@@ -10,36 +10,38 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QGraphicsView, QGraphics
                              QHBoxLayout, QVBoxLayout, QWidget)
 from matplotlib.hatch import SouthEastHatch
 
-from Block import Block
-from project.BackgroundScene import BackgroundScene
-from project.LinesUtil import LinesUtil
+from BlockDetection import BlockDetection
+from project.CustomizeScene import CustomizeScene
+from project.LinesUtils import LinesUtils
 from project.MovableLineItem import MovableLineItem
 from project.MovableRectItem import MovableRectItem
 from project.EditRectWindow import EditRectWindow
-from project.RectDetection import RectDetection
-from project.CustomView import VisualizedView
+from project.StructureDetection import StructureDetection
+from project.CustomizeView import CustomizeView
 from project.table_convertor import Convertor
 
 
 class TableDetectionWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
+		self.status_bar = None
+		self.init_scene = None
 		self.btn_height_minus = None
 		self.btn_height_plus = None
 		self.btn_width_minus = None
 		self.btn_width_plus = None
 		self.toggle_box = None
 		self.combox = None
-		self.view = VisualizedView()
-		self.table = Block()
-		self.detector = RectDetection()
+		self.view = CustomizeView()
+		self.block_detector = BlockDetection()
+		self.structure_detector = StructureDetection()
 		self.edit_window = None
-		self.status_label = None
-		self.widgetLayout = None
-		self.background_pixmap = None
-		self.bottom_widget = None
+		# self.status_label = None
+		self.widget_layout = None
+		# self.background_pixmap = None
+		# self.bottom_widget = None
+		# self.pen = None
 		self.right_widget = None
-		self.pen = None
 		self.scene = None
 		self.label = None
 		self.rect_isvisible = None
@@ -64,7 +66,7 @@ class TableDetectionWindow(QMainWindow):
 		main_hbox = QHBoxLayout(central_widget)
 
 		# 左边部分 - QGraphicsView 和 QGraphicsScene
-		self.initForwardScene()
+		self.init_forward_scene()
 		self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 		main_hbox.addWidget(self.view, 5)  # 占据3份空间
 
@@ -79,15 +81,15 @@ class TableDetectionWindow(QMainWindow):
 
 		self.right_widget.setObjectName("RightWidget")  # 设置唯一标识
 
-		self.initToolWidget()
-		self.right_widget.setLayout(self.widgetLayout)
+		self.init_tool_widget()
+		self.right_widget.setLayout(self.widget_layout)
 		self.right_widget.setStyleSheet("""
 			QWidget#RightWidget {
                 border:1px solid black;
             }
 		    """)
 
-	def initForwardScene(self):
+	def init_forward_scene(self):
 		self.init_scene = QGraphicsScene()
 		file_btn = QPushButton("上传文件")
 		file_btn.resize(300, 100)
@@ -106,7 +108,7 @@ class TableDetectionWindow(QMainWindow):
 		""")
 		pixmap = QPixmap("imgs/fileUpload.png")
 		file_btn.setIcon(QIcon(pixmap))
-		file_btn.clicked.connect(self.fileUpload)
+		file_btn.clicked.connect(self.file_upload)
 		proxy_file_btn = self.init_scene.addWidget(file_btn)
 		proxy_file_btn.setPos(100, 100)
 		self.view.setScene(self.init_scene)
@@ -115,10 +117,10 @@ class TableDetectionWindow(QMainWindow):
 			QPainter.RenderHint.SmoothPixmapTransform
 		)
 
-	def initToolWidget(self):
+	def init_tool_widget(self):
 		print("enter init tool widget")
-		self.widgetLayout = QVBoxLayout()
-		self.widgetLayout.setContentsMargins(5, 0, 5, 0)
+		self.widget_layout = QVBoxLayout()
+		self.widget_layout.setContentsMargins(5, 0, 5, 0)
 		tool_layout = QHBoxLayout()
 		tool_layout.setContentsMargins(0, 0, 0, 0)
 		tool_layout.addStretch(1)
@@ -136,7 +138,7 @@ class TableDetectionWindow(QMainWindow):
 		tool_layout.addWidget(tool_label)
 		tool_layout.addStretch(1)
 
-		self.widgetLayout.addLayout(tool_layout)
+		self.widget_layout.addLayout(tool_layout)
 		self.init_line_toolbar()
 		self.init_rect_toolbar()
 		self.init_save_convertor_toolbar()
@@ -149,7 +151,7 @@ class TableDetectionWindow(QMainWindow):
 		for button in self.sys_buttons:
 			button.setEnabled(False)
 
-		self.widgetLayout.addStretch(1)
+		self.widget_layout.addStretch(1)
 		print("end init tool widget")
 
 	def init_rect_toolbar(self):
@@ -179,7 +181,7 @@ class TableDetectionWindow(QMainWindow):
 		pixmap = QPixmap("imgs/rect.png")
 		addBtn.setFixedSize(80, 25)
 		addBtn.setIcon(QIcon(pixmap))
-		addBtn.clicked.connect(lambda: self.setMode(pre_mode=self.scene.current_mode, mode='box'))
+		addBtn.clicked.connect(lambda: self.set_mode(pre_mode=self.scene.current_mode, mode='box'))
 		addBtn.setStyleSheet("""
 							QPushButton {
 								background-color: #55aaff;
@@ -211,7 +213,7 @@ class TableDetectionWindow(QMainWindow):
 						background-color: #00aaff;
 					}
 				""")
-		stop_button.clicked.connect(lambda: self.setMode(pre_mode=self.scene.current_mode, mode='view'))
+		stop_button.clicked.connect(lambda: self.set_mode(pre_mode=self.scene.current_mode, mode='view'))
 
 		self.view_rect_btn = QPushButton("显示文字方框")
 		self.view_rect_btn.setFixedSize(80, 25)
@@ -229,7 +231,7 @@ class TableDetectionWindow(QMainWindow):
 						background-color: #00aaff;
 					}
 		""")
-		self.view_rect_btn.clicked.connect(self.displayRect)
+		self.view_rect_btn.clicked.connect(self.display_rect)
 
 		standardize_btn = QPushButton()
 		standardize_btn.setFixedSize(80, 25)
@@ -248,7 +250,7 @@ class TableDetectionWindow(QMainWindow):
 						background-color: #00aaff;
 					}
 			""")
-		standardize_btn.clicked.connect(self.standardizeLengthTable)
+		standardize_btn.clicked.connect(self.standardize_length_table)
 
 		btn_layout.addWidget(addBtn)
 		btn_layout.addWidget(stop_button)
@@ -314,7 +316,7 @@ class TableDetectionWindow(QMainWindow):
 				background-color: #3a95e6;
 			}
 		""")
-		adjustBtn.clicked.connect(self.adjustRectSize)
+		adjustBtn.clicked.connect(self.adjust_rect_size)
 
 		step_label = QLabel("步长")
 		step_label.setStyleSheet("border:none")
@@ -346,7 +348,7 @@ class TableDetectionWindow(QMainWindow):
 		self.rect_buttons.append(self.view_rect_btn)
 		self.rect_buttons.append(standardize_btn)
 
-		self.widgetLayout.addLayout(main_layout)
+		self.widget_layout.addLayout(main_layout)
 
 	def init_line_toolbar(self):
 		main_layout = QVBoxLayout()
@@ -390,7 +392,7 @@ class TableDetectionWindow(QMainWindow):
 						background-color: #00aaff;
 					}
 				""")
-		drawBtn.clicked.connect(lambda: self.setMode(pre_mode=self.scene.current_mode, mode='line'))
+		drawBtn.clicked.connect(lambda: self.set_mode(pre_mode=self.scene.current_mode, mode='line'))
 
 		special_btn = QPushButton()
 		special_btn.setText("线条特殊")
@@ -507,7 +509,7 @@ class TableDetectionWindow(QMainWindow):
 				background-color: #00aaff;
 			}
 		""")
-		vertical_btn.clicked.connect(self.adjustVerticalLines)
+		vertical_btn.clicked.connect(self.adjust_vertical_lines)
 		btn_layout.addWidget(vertical_btn)
 		btn_layout.addStretch(1)
 
@@ -556,7 +558,7 @@ class TableDetectionWindow(QMainWindow):
 				background-color: #00aaff;
 			}
 		""")
-		horizontal_btn.clicked.connect(self.adjustHorizontalLines)
+		horizontal_btn.clicked.connect(self.adjust_horizontal_lines)
 
 		btn_layout.addWidget(horizontal_btn)
 		btn_layout.addStretch(1)
@@ -575,7 +577,7 @@ class TableDetectionWindow(QMainWindow):
 		self.line_buttons.append(vertical_btn)
 		self.line_buttons.append(horizontal_btn)
 
-		self.widgetLayout.addLayout(main_layout)
+		self.widget_layout.addLayout(main_layout)
 
 	def init_save_convertor_toolbar(self):
 		main_layout = QVBoxLayout()
@@ -629,7 +631,7 @@ class TableDetectionWindow(QMainWindow):
 				background-color: #3ab46f;
 			}
 		""")
-		save_rect_btn.clicked.connect(self.saveAsFile)
+		save_rect_btn.clicked.connect(self.save_as_file)
 		save_rect_btn.setFixedSize(80, 25)
 
 		self.combox = QComboBox()
@@ -735,7 +737,7 @@ class TableDetectionWindow(QMainWindow):
 		main_layout.addLayout(btn_layout)
 
 		self.sys_buttons.append(save_rect_btn)
-		self.widgetLayout.addLayout(main_layout)
+		self.widget_layout.addLayout(main_layout)
 
 	def init_system_tool(self):
 		main_layout = QVBoxLayout()
@@ -777,7 +779,7 @@ class TableDetectionWindow(QMainWindow):
 				background-color: #ed0000;
 			}
 		""")
-		delete_btn.clicked.connect(self.deleteSceneItems)
+		delete_btn.clicked.connect(self.delete_scene_items)
 		delete_btn.setShortcut("Ctrl+D")
 
 		transfer_btn = QPushButton()
@@ -797,7 +799,7 @@ class TableDetectionWindow(QMainWindow):
 				background-color: #00aaff;
 			}
 		""")
-		transfer_btn.clicked.connect(self.imageTrans)
+		transfer_btn.clicked.connect(self.image_trans)
 
 		exit_btn = QPushButton()
 		exit_btn.setFixedSize(80, 25)
@@ -922,13 +924,14 @@ class TableDetectionWindow(QMainWindow):
 		main_layout.addLayout(convertor_layout)
 
 		self.sys_buttons.append(delete_btn)
-		self.widgetLayout.addLayout(main_layout)
+		self.widget_layout.addLayout(main_layout)
 
-	def initEditScene(self):
+	def init_edit_scene(self):
+		print("xxxxx")
 		if self.background_pixmap.isNull():
 			print("NULL")
 
-		self.scene = BackgroundScene()
+		self.scene = CustomizeScene()
 		self.scene.setSceneRect(0, 0, 900, 740)
 		self.pen = QPen(QColor(0, 0, 255), 2)  # 蓝色，2像素宽
 
@@ -939,7 +942,7 @@ class TableDetectionWindow(QMainWindow):
 		self.scene.scene_border.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
 		self.scene.addItem(self.scene.scene_border)
 
-		self.scene.setBackgroundPixmap(self.background_pixmap)
+		self.scene.set_background_pixmap(self.background_pixmap)
 
 		for button in self.rect_buttons:
 			button.setEnabled(True)
@@ -954,16 +957,17 @@ class TableDetectionWindow(QMainWindow):
 			QPainter.RenderHint.Antialiasing |
 			QPainter.RenderHint.SmoothPixmapTransform
 		)
-		self.view.end_draw_rect.connect(lambda: self.setMode(pre_mode="box", mode="view"))
-		self.initTableStructure()
-		self.initRect()
-		result_text = "\n".join(["; ".join(sublist) for sublist in self.table.block_texts])
+		self.view.end_draw_rect.connect(lambda: self.set_mode(pre_mode="box", mode="view"))
+		self.init_table_structure()
+		self.init_rect()
+		result_text = "\n".join(["; ".join(sublist) for sublist in self.block_detector.block_texts])
 		self.label.setPlainText(result_text)
 
-	def initRect(self):
-		if self.table.rect_points is not None:
+	def init_rect(self):
+		if self.block_detector.rect_points is not None:
 			print("开始进行点的计算")
-			for point, text, block in zip(self.table.rect_points, self.table.text, self.table.data):
+			for point, text, block in zip(self.block_detector.rect_points, self.block_detector.text,
+			                              self.block_detector.data):
 				rect = QRect(QPoint(point[0][0], point[0][1]), QPoint(point[2][0], point[2][1]))
 				rect_item = MovableRectItem(text=text, rect=rect)
 				if self.scene.start_point_x is not None:
@@ -977,18 +981,18 @@ class TableDetectionWindow(QMainWindow):
 					self.scene.addItem(rect_item)
 					self.scene.rect_items.append(rect_item)
 
-		self.scene.sceneClickedSignal.connect(self.updateLabel)
-		self.scene.endLineSignal.connect(lambda: self.setMode(pre_mode="line", mode="view"))
-		self.scene.editSignal.connect(self.openEditWindow)
-		self.setMode(pre_mode="view", mode="view")
+		self.scene.sceneClickedSignal.connect(self.update_label)
+		self.scene.endLineSignal.connect(lambda: self.set_mode(pre_mode="line", mode="view"))
+		self.scene.editSignal.connect(self.open_edit_window)
+		self.set_mode(pre_mode="view", mode="view")
 		print("end initRect")
 
-	def initTableStructure(self):
+	def init_table_structure(self):
 		print("enter initTableStructure")
-		rows = LinesUtil.identify_rows(self.detector.table_info, 25)
-		columns = LinesUtil.identify_columns(self.detector.table_info, 25)
-		row_lines = LinesUtil.drawRowLines(rows)
-		col_lines = LinesUtil.drawColLines(columns)
+		rows = LinesUtils.identify_rows(self.structure_detector.table_info, 25)
+		columns = LinesUtils.identify_columns(self.structure_detector.table_info, 25)
+		row_lines = LinesUtils.drawRowLines(rows)
+		col_lines = LinesUtils.drawColLines(columns)
 		base_x = self.scene.start_point_x
 		base_y = self.scene.start_point_y
 		# 绘制垂直线
@@ -1026,10 +1030,10 @@ class TableDetectionWindow(QMainWindow):
 
 		print("end initTableStructure")
 
-	def standardizeLengthTable(self):
+	def standardize_length_table(self):
 		print("enter standardizeTable")
-		self.scene.col_lines = LinesUtil.sortLines(self.scene.col_lines, 1)
-		self.scene.row_lines = LinesUtil.sortLines(self.scene.row_lines, 2)
+		self.scene.col_lines = LinesUtils.sortLines(self.scene.col_lines, 1)
+		self.scene.row_lines = LinesUtils.sortLines(self.scene.row_lines, 2)
 
 		origin_x1 = self.scene.col_lines[0].line().x1()
 		origin_x2 = self.scene.col_lines[-1].line().x1()
@@ -1057,10 +1061,10 @@ class TableDetectionWindow(QMainWindow):
 				line_item.setLine(line)
 
 		pos_y = origin_y1 + delta_y1
-		self.standardizePosTable(pos_x=pos_x, pos_y=pos_y)
+		self.standardize_pos_table(pos_x=pos_x, pos_y=pos_y)
 		print("end standardizeTable")
 
-	def standardizePosTable(self, pos_x, pos_y):
+	def standardize_pos_table(self, pos_x, pos_y):
 		print("enter standardizePosTable")
 		for item in self.scene.row_lines:
 			if not item.special:
@@ -1078,7 +1082,7 @@ class TableDetectionWindow(QMainWindow):
 		self.standardize_special_lines_pos()
 		print("end standardizePosTable")
 
-	def setMode(self, pre_mode, mode):
+	def set_mode(self, pre_mode, mode):
 		print("start mode")
 		self.scene.current_mode = mode
 		if mode == "line":
@@ -1091,7 +1095,7 @@ class TableDetectionWindow(QMainWindow):
 		else:
 			if mode == "box":
 				self.status_bar.showMessage("绘制矩形框中...")
-				self.scene.setLinesNotMov()
+				self.scene.set_lines_not_mov()
 			else:
 				if pre_mode == 'line':
 					items = self.scene.items()
@@ -1109,7 +1113,7 @@ class TableDetectionWindow(QMainWindow):
 		self.set_button_style(mode=mode)
 		print("end mode")
 
-	def fileUpload(self):
+	def file_upload(self):
 		print("start fileUpload")
 		# 打开文件选择对话框，只允许选择图片
 		file_dialog = QFileDialog()
@@ -1128,15 +1132,18 @@ class TableDetectionWindow(QMainWindow):
 				file_path = selected_files[0]
 				if file_path is not None:
 					QMessageBox.information(self, "消息通知", f"图片上传成功!\n正在检测图片表格,图片路径:{file_path}")
-					self.table.ocr(file_path)
+					self.block_detector.ocr(file_path)
+					if self.block_detector.data is None or len(self.block_detector.data) == 0:
+						QMessageBox.warning(self, "消息提示", "所选图片中未识别到表格,请重新选择一张图片!")
+						return
 					self.background_pixmap = QPixmap(file_path)
 					# print(f"选择的文件路径: {file_path}")
-					self.detector.detectRect(file_path)
-					self.initEditScene()
+					self.structure_detector.detectRect(file_path)
+					self.init_edit_scene()
 				else:
 					QMessageBox.warning(self, "消息提示", "未找到文件!")
 
-	def updateLabel(self):
+	def update_label(self):
 		list_items = self.scene.items()
 		if list_items is not None:
 			for item in list_items:
@@ -1153,7 +1160,7 @@ class TableDetectionWindow(QMainWindow):
 						pen.setWidth(2)
 						item.setPen(pen)
 						if self.edit_window_show:
-							self.edit_window.displayBlock(content=text, width=width, height=height)
+							self.edit_window.display_block(content=text, width=width, height=height)
 					else:
 						if item.pen().color() != Qt.GlobalColor.green and item.pen().color() != Qt.GlobalColor.transparent:
 							if self.edit_window_show or self.rect_isvisible is False:
@@ -1310,7 +1317,7 @@ class TableDetectionWindow(QMainWindow):
 				}
 			""")
 
-	def saveAsFile(self):
+	def save_as_file(self):
 		print("enter save")
 		"""可以导出为pdf"""
 		flag = False
@@ -1328,9 +1335,9 @@ class TableDetectionWindow(QMainWindow):
 			else:
 				res = False
 				if flag:
-					res = self.scene.exportWord(file_name=self.file_name.text() + ".docx")
+					res = self.scene.export_word(file_name=self.file_name.text() + ".docx")
 				else:
-					res = self.scene.exportWord()
+					res = self.scene.export_word()
 				if res:
 					QMessageBox.information(self, "消息提示", "保存为word文件成功!")
 					self.path_label.setText(self.script_dir + "\\out_word\\" + self.file_name.text())
@@ -1340,10 +1347,10 @@ class TableDetectionWindow(QMainWindow):
 		elif current_index == 1:
 			res = False
 			if flag:
-				res = self.scene.exportPDF(standard=self.pdf_table_box.isChecked(),
-				                           file_name=self.file_name.text() + ".pdf")
+				res = self.scene.export_pdf(standard=self.pdf_table_box.isChecked(),
+				                            file_name=self.file_name.text() + ".pdf")
 			else:
-				res = self.scene.exportPDF(standard=self.pdf_table_box.isChecked())
+				res = self.scene.export_pdf(standard=self.pdf_table_box.isChecked())
 			if res:
 				QMessageBox.information(self, "消息提示", "保存为pdf文件成功!!")
 				self.path_label.setText(self.script_dir + "\\out_pdf\\" + self.file_name.text())
@@ -1355,10 +1362,10 @@ class TableDetectionWindow(QMainWindow):
 			else:
 				res = False
 				if flag:
-					res = self.scene.exportHtml5Table(special=self.html_title_box.isChecked(),
-					                                  file_name=self.file_name.text() + ".html")
+					res = self.scene.export_html5_table(special=self.html_title_box.isChecked(),
+					                                    file_name=self.file_name.text() + ".html")
 				else:
-					res = self.scene.exportHtml5Table(special=self.html_title_box.isChecked())
+					res = self.scene.export_html5_table(special=self.html_title_box.isChecked())
 				if res:
 					QMessageBox.information(self, "消息提示", "保存为html文件成功!")
 					self.path_label.setText(self.script_dir + "\\out_html\\" + self.file_name.text())
@@ -1368,49 +1375,49 @@ class TableDetectionWindow(QMainWindow):
 			QMessageBox.warning(self, "消息提示", "请选择一种保存格式!")
 		print("end save")
 
-	def openEditWindow(self):
+	def open_edit_window(self):
 		print("enter openEditWindow")
 		if isinstance(self.selected_item, MovableRectItem):
-			self.updateLabel()
+			self.update_label()
 			if self.edit_window is None:
 				self.edit_window = EditRectWindow()
 				self.edit_window.initUI()
-				self.edit_window.closeSignal.connect(self.updateEditWindowStatus)
-				self.edit_window.modifySignal.connect(self.modifyBlock)
+				self.edit_window.closeSignal.connect(self.update_edit_window_status)
+				self.edit_window.modifySignal.connect(self.modify_block)
 				self.edit_window_show = True
 
 			if self.rect_isvisible:
-				self.hideRectBorder()
+				self.hide_rect_border()
 				self.rect_isvisible = False
 
 			if self.edit_window.isVisible() is False:
 				self.edit_window_show = True
-				self.changeLinesSelected(self.edit_window_show)
+				self.change_lines_selected(self.edit_window_show)
 				text = self.selected_item.text
 				width = self.selected_item.rect().width()
 				height = self.selected_item.rect().height()
 				viewText = self.selected_item.viewText
-				self.edit_window.displayBlock(viewText=viewText, content=text, width=width, height=height)
+				self.edit_window.display_block(viewText=viewText, content=text, width=width, height=height)
 				self.edit_window.show()
 				self.edit_window.activateWindow()
 		else:
 			pass
 		print("end openEditWindow")
 
-	def updateEditWindowStatus(self):
+	def update_edit_window_status(self):
 		print("enter updateEditWindowStatus")
 		self.edit_window_show = False
-		self.changeLinesSelected(self.edit_window_show)
-		self.updateLabel()
+		self.change_lines_selected(self.edit_window_show)
+		self.update_label()
 		self.scene.clearSelection()
 		self.selected_item = None
 		if not self.rect_isvisible:
-			self.displayRectBorder()
+			self.display_rect_border()
 			self.rect_isvisible = True
 
 		print("end updateEditWindowStatus")
 
-	def changeLinesSelected(self, state):
+	def change_lines_selected(self, state):
 		if state is True:
 			if self.scene.col_lines:
 				for item in self.scene.col_lines:
@@ -1421,6 +1428,13 @@ class TableDetectionWindow(QMainWindow):
 			if self.scene.bias_lines:
 				for item in self.scene.row_lines:
 					item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+			if self.scene.special_col_lines:
+				for item in self.scene.special_col_lines:
+					item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+			if self.scene.special_row_lines:
+				for item in self.scene.special_row_lines:
+					item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+
 		elif state is False:
 			if self.scene.col_lines:
 				for item in self.scene.col_lines:
@@ -1431,8 +1445,14 @@ class TableDetectionWindow(QMainWindow):
 			if self.scene.bias_lines:
 				for item in self.scene.row_lines:
 					item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+			if self.scene.special_col_lines:
+				for item in self.scene.special_col_lines:
+					item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+			if self.scene.special_row_lines:
+				for item in self.scene.special_row_lines:
+					item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
 
-	def deleteSceneItems(self):
+	def delete_scene_items(self):
 		items = self.scene.selectedItems()
 		if items:
 			for item in items:
@@ -1454,33 +1474,33 @@ class TableDetectionWindow(QMainWindow):
 				self.scene.removeItem(item)
 		self.scene.clearSelection()
 
-	def displayRect(self):
+	def display_rect(self):
 		print("enter displayRect")
 		if self.rect_isvisible is None:
-			self.scene.setLinesNotMov()
+			self.scene.set_lines_not_mov()
 			self.view_rect_btn.setText("隐藏绿色方框")
-			self.viewRect()
+			self.view_rect()
 			self.rect_isvisible = True
 		else:
 			if self.rect_isvisible is True:
-				self.hideRectBorder()
+				self.hide_rect_border()
 				self.rect_isvisible = False
 				self.view_rect_btn.setText("显示绿色方框")
 
 			else:
-				self.displayRectBorder()
+				self.display_rect_border()
 				self.rect_isvisible = True
 				self.view_rect_btn.setText("隐藏绿色方框")
 		print("end displayRect")
 
-	def viewRect(self):
+	def view_rect(self):
 		items = self.scene.items()
 		if items is not None:
 			for item in items:
 				if isinstance(item, MovableRectItem):
 					item.setVisible(True)
 
-	def adjustRectSize(self):
+	def adjust_rect_size(self):
 		""" 调整选中矩形的尺寸 """
 		try:
 			width = float(self.width_number.text())
@@ -1503,8 +1523,8 @@ class TableDetectionWindow(QMainWindow):
 
 			self.scene.update()  # 刷新场景
 		else:
-			QMessageBox.warning(self,"操作提示","请先选择一张图片!")
-			
+			QMessageBox.warning(self, "操作提示", "请先选择一张图片!")
+
 	def adjust_rect_size_step(self, dimension, operation):
 		print("enter adjust_rect_size_step")
 		"""调整矩形尺寸"""
@@ -1536,7 +1556,7 @@ class TableDetectionWindow(QMainWindow):
 						new_value = current_value - step
 					self.height_number.setText(str(new_value))
 					self.selected_item.setRect(rect.x(), rect.y(), rect.width(), new_value)
-				self.updateLabel()
+				self.update_label()
 			except ValueError as e:
 				QMessageBox.warning(self, "操作错误", str(e))
 				return
@@ -1545,8 +1565,7 @@ class TableDetectionWindow(QMainWindow):
 		print("end adjust_rect_size_step")
 
 	# 更新矩形尺寸（保持左上角位置不变）
-
-	def hideRectBorder(self):
+	def hide_rect_border(self):
 		print("enter hideRectBorder")
 		list_items = self.scene.items()
 		if list_items is not None:
@@ -1563,7 +1582,7 @@ class TableDetectionWindow(QMainWindow):
 						item.setPen(pen)
 		print("end hideRectBorder")
 
-	def displayRectBorder(self):
+	def display_rect_border(self):
 		print("enter displayRectBorder")
 		list_items = self.scene.items()
 		if list_items is not None:
@@ -1574,38 +1593,37 @@ class TableDetectionWindow(QMainWindow):
 					item.setPen(pen)
 		print("end displayRectBorder")
 
-	def modifyBlock(self):
+	def modify_block(self):
 		print("enter modifyBlock")
 		if self.selected_item is not None and isinstance(self.selected_item, MovableRectItem):
-			self.selected_item.text = self.edit_window.getContent()
+			self.selected_item.text = self.edit_window.get_content()
 			self.selected_item.setViewText(self.selected_item.text)
-
 			self.selected_item.adjust_text_position()
 		print("end modifyBlock")
 
-	def adjustVerticalLines(self):
+	def adjust_vertical_lines(self):
 		input_text = self.vertical_edit.text()
 		try:
 			input_length = float(input_text)
 		except ValueError:
 			QMessageBox.warning(self, "错误", "请输入有效数字")
 			return
-		self.reSizeLinesLength(input_length=input_length, items=self.scene.col_lines)
+		self.resize_lines_length(input_length=input_length, items=self.scene.col_lines)
 		self.vertical_edit.setText("")
 		self.vertical_edit.setFocus()
 
-	def adjustHorizontalLines(self):
+	def adjust_horizontal_lines(self):
 		input_text = self.horizontal_edit.text()
 		try:
 			input_length = float(input_text)
 		except ValueError:
 			QMessageBox.warning(self, "错误", "请输入有效数字")
 			return
-		self.reSizeLinesLength(input_length=input_length, items=self.scene.row_lines)
+		self.resize_lines_length(input_length=input_length, items=self.scene.row_lines)
 		self.horizontal_edit.setText("")
 		self.horizontal_edit.setFocus()
 
-	def reSizeLinesLength(self, input_length, items):
+	def resize_lines_length(self, input_length, items):
 		for line_item in items:
 			line = line_item.line()
 			length = line.length()
@@ -1634,7 +1652,7 @@ class TableDetectionWindow(QMainWindow):
 					self.length_number.setText(str(new_value))
 					self.selected_item.setLine(line)
 
-	def imageTrans(self):
+	def image_trans(self):
 		# 创建文件对话框
 		file_dialog = QFileDialog()
 		file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")
@@ -1699,10 +1717,6 @@ class TableDetectionWindow(QMainWindow):
 				"\n\n".join(msg) if msg else "没有选择任何文件"
 			)
 
-	# if success:
-	# 	QMessageBox.information(self, "成功!", "图片已处理!")
-	# else:
-	# 	QMessageBox.warning(self, "提示信息", f"图片保存失败，可能不支持 {output_ext} 格式")
 
 	def con_to_pdf(self):
 		flag = False
@@ -1816,7 +1830,6 @@ class TableDetectionWindow(QMainWindow):
 					QMessageBox.warning(self, "消息提示", "出现未知错误!")
 
 	def set_line_special(self):
-		print("enter set special")
 		items = self.scene.selectedItems()
 		if len(items) and isinstance(items[0], MovableLineItem):
 			items[0].special = not items[0].special
@@ -1836,13 +1849,13 @@ class TableDetectionWindow(QMainWindow):
 				elif items[0].type == "type_x":
 					self.scene.special_col_lines.remove(items[0])
 					self.scene.row_lines.append(items[0])
-		print("end set special")
 
 	def standardize_special_lines_pos(self):
 		print("enter standardize special lines pos")
 		for line_item in self.scene.special_col_lines:
-			line_item.getCorrectPosY()
-			(flag, pos_y, length) = self.is_near_row(self.scene.row_lines, line_item)
+			line_item.get_correct_pos_y()
+			(flag, pos_y, length) = self.is_near_row(self.scene.row_lines,
+			                                         line_item)
 			if flag:
 				delta = pos_y - line_item.line().y1()
 				if abs(delta) >= 0.1:
@@ -1851,11 +1864,10 @@ class TableDetectionWindow(QMainWindow):
 					line = line_item.line()
 					line.setLength(length)
 					line_item.setLine(line)
-				line_item.getCorrectPosY()
+				line_item.get_correct_pos_y()
 		print("end standardize special lines pos")
 
 	def is_near_row(self, row_lines, line_item):
-		print("enter is_near_row")
 		r1 = False
 		pos_y = line_item.point_y
 		pos_y_end = pos_y + line_item.line().length()
@@ -1866,8 +1878,6 @@ class TableDetectionWindow(QMainWindow):
 				pos_y = row_item.point_y
 			if abs(row_item.point_y - pos_y_end) < 5:
 				length = row_item.point_y - pos_y
-
-		print("end is_near_row")
 		return r1, pos_y, length
 
 	def pre_close(self):

@@ -1,7 +1,7 @@
 import re
 
 
-class LinesUtil:
+class LinesUtils:
 	@staticmethod
 	def identify_rows(cells, threshold=10):
 		start_y = cells[0][1]
@@ -95,12 +95,12 @@ class LinesUtil:
 		print("enter sortLines")
 		if mode == 1:
 			for line in lines:
-				line.getCorrectPosX()
+				line.get_correct_pos_x()
 			sort_lines = sorted(lines, key=lambda item: item.point_x)
 			return sort_lines
 		elif mode == 2:
 			for line in lines:
-				line.getCorrectPosY()
+				line.get_correct_pos_y()
 			sort_lines = sorted(lines, key=lambda item: item.point_y)
 			return sort_lines
 		else:

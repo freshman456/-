@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QKeySequence
 from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
-from LinesUtil import LinesUtil
+from LinesUtils import LinesUtils
 
 
 class EditRectWindow(QWidget):
@@ -13,6 +13,7 @@ class EditRectWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super().__init__(parent)
+		self.display_label = None
 		self.viewText = None
 		self.h_line = None
 		self.w_line = None
@@ -104,7 +105,7 @@ class EditRectWindow(QWidget):
 				text-align: center;
 			}
 		""")
-		confirm_btn.clicked.connect(self.emitModify)
+		confirm_btn.clicked.connect(self.emit_modify)
 		btn_layout.addWidget(confirm_btn)
 
 		cancel_btn = QPushButton()
@@ -136,7 +137,7 @@ class EditRectWindow(QWidget):
 		self.closeSignal.emit()
 		event.accept()
 
-	def displayBlock(self, viewText=None, content=None, width=None, height=None):
+	def display_block(self, viewText=None, content=None, width=None, height=None):
 		if viewText:
 			self.h_line = height
 			self.w_line = width
@@ -145,24 +146,23 @@ class EditRectWindow(QWidget):
 			self.display_label.setPlainText(content)
 		self.content_edit.setFocus()
 
-	def emitModify(self):
+	def emit_modify(self):
 		self.modifySignal.emit()
 		self.get_view_text(self.content_edit.toPlainText())
 		self.text_label.setText(f"宽度:{self.w_line}px, 高度:{self.h_line}px 内容: {self.viewText}")
 		self.display_label.setPlainText(self.content_edit.toPlainText())
 		self.close()
 
-	def getContent(self):
+	def get_content(self):
 		return self.content_edit.toPlainText()
 
 	def get_view_text(self, text):
-		print("enter setViewText")
 		if len(text) <= 3:
 			self.viewText = text
 		# 160->8个汉字 16个英文字母
 		else:
 			width = self.w_line
-			res = LinesUtil.count_chinese_and_non_chinese_regex(text)
+			res = LinesUtils.count_chinese_and_non_chinese_regex(text)
 			max_len = int(width / 160.0 * 8)
 			if res > max_len:
 				self.viewText = text[:max_len - 3]
@@ -172,5 +172,3 @@ class EditRectWindow(QWidget):
 					self.viewText = text[0] + "..."
 			else:
 				self.viewText = text
-
-		print("end setViewText")

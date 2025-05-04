@@ -11,10 +11,10 @@ class MovableLineItem(QGraphicsLineItem):
 		self.special = False
 		self.type = None
 
-	def getCorrectPosX(self):
+	def get_correct_pos_x(self):
 		self.point_x = self.line().x1() + self.scenePos().x()
 
-	def getCorrectPosY(self):
+	def get_correct_pos_y(self):
 		self.point_y = self.line().y1() + self.scenePos().y()
 
 	def shape(self):
