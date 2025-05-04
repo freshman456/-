@@ -7,8 +7,6 @@ class BlockDetection:
 	def __init__(self):
 		self.data = None
 		self.text = []
-		self.rows = 0
-		self.cols = 0
 		self.rect_points = []
 		self.block_texts = []
 
@@ -74,13 +72,12 @@ class BlockDetection:
 			for cell in current_row:
 				block_text.append(cell[1][0])
 			self.block_texts.append(block_text)
-		self.getCorrectPoint()
+		self.get_point_and_text()
 
-	def getCorrectPoint(self):
+	def get_point_and_text(self):
 		scale_factor = 1  # 缩放因子
 		for block in self.data:
 			point = [[int(x * (1 / scale_factor)), int(y * (1 / scale_factor))] for [x, y] in block[0]]
-
 			self.rect_points.append(point)
 			block[0] = [[int(x * scale_factor), int(y * scale_factor)] for [x, y] in block[0]]
 			self.text.append(block[1][0])
@@ -88,7 +85,5 @@ class BlockDetection:
 	def clear_data(self):
 		self.data = None
 		self.text.clear()
-		self.rows = 0
-		self.cols = 0
 		self.rect_points.clear()
 		self.block_texts.clear()

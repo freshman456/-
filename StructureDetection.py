@@ -11,11 +11,9 @@ class StructureDetection:
 		self.table_engine = RapidTable(input_args)
 		self.table_info = []
 
-	def detectRect(self, path):
+	def detect_structure(self, path):
 		self.table_info = []
-		print("enter detect rect")
 		if path is None:
-			print("path is None")
 			return
 		results = self.table_engine(path)
 		self.table_info = results.cell_bboxes
@@ -23,7 +21,5 @@ class StructureDetection:
 		for row in self.table_info:
 			rounded_row = [round(num, 2) for num in row]
 			rounded_table_info.append(rounded_row)
-
 		# 将结果赋值回 self.structure_detector.table_info
 		self.table_info = rounded_table_info
-		print("end detect rect")

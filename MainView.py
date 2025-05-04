@@ -24,6 +24,7 @@ from project.table_convertor import Convertor
 class TableDetectionWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
+		self.background_pixmap = None
 		self.status_bar = None
 		self.init_scene = None
 		self.btn_height_minus = None
@@ -36,11 +37,7 @@ class TableDetectionWindow(QMainWindow):
 		self.block_detector = BlockDetection()
 		self.structure_detector = StructureDetection()
 		self.edit_window = None
-		# self.status_label = None
 		self.widget_layout = None
-		# self.background_pixmap = None
-		# self.bottom_widget = None
-		# self.pen = None
 		self.right_widget = None
 		self.scene = None
 		self.label = None
@@ -1138,7 +1135,7 @@ class TableDetectionWindow(QMainWindow):
 						return
 					self.background_pixmap = QPixmap(file_path)
 					# print(f"选择的文件路径: {file_path}")
-					self.structure_detector.detectRect(file_path)
+					self.structure_detector.detect_structure(file_path)
 					self.init_edit_scene()
 				else:
 					QMessageBox.warning(self, "消息提示", "未找到文件!")
@@ -1668,7 +1665,6 @@ class TableDetectionWindow(QMainWindow):
 			# if len(selected_files) > 0:
 			try:
 				for file_path in selected_files:
-					print(file_path)
 					# file_path = selected_files[0]
 					file_name = os.path.basename(file_path)
 					base_name, original_ext = os.path.splitext(file_name)
