@@ -1,8 +1,6 @@
-import sys
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QKeySequence
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import  QHBoxLayout, QLabel,  QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 from LinesUtils import LinesUtils
 

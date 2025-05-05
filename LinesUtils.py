@@ -36,7 +36,7 @@ class LinesUtils:
 		return columns
 
 	@staticmethod
-	def drawColLines(columns):
+	def draw_col_lines(columns):
 		count = len(columns)
 		col_lines = []
 		line = []
@@ -60,7 +60,7 @@ class LinesUtils:
 		return col_lines
 
 	@staticmethod
-	def drawRowLines(rows):
+	def draw_row_lines(rows):
 		count = len(rows)
 		row_lines = []
 		line = []
@@ -91,8 +91,7 @@ class LinesUtils:
 		return row_lines
 
 	@staticmethod
-	def sortLines(lines, mode):
-		print("enter sortLines")
+	def sort_lines(lines, mode):
 		if mode == 1:
 			for line in lines:
 				line.get_correct_pos_x()
@@ -104,7 +103,6 @@ class LinesUtils:
 			sort_lines = sorted(lines, key=lambda item: item.point_y)
 			return sort_lines
 		else:
-			print("end sortLines3")
 			return lines
 
 	@staticmethod

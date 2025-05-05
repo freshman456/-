@@ -29,8 +29,6 @@ class CustomizeScene(QGraphicsScene):
 		self.current_mode = None
 		self.background_pixmap = None
 		self.export_flag = False
-		# self.draw_mode = None
-		# self.current_line = None
 		self.col_lines = []
 		self.row_lines = []
 		self.bias_lines = []
@@ -222,7 +220,7 @@ class CustomizeScene(QGraphicsScene):
 					for rect_item in self.rect_items:
 						rect_item.setPen(QPen(Qt.GlobalColor.green, 2))
 						rect_item.text_item.setDefaultTextColor(Qt.GlobalColor.blue)
-						rect_item.setViewText(rect_item.text)
+						rect_item.set_view_text(rect_item.text)
 				if self.row_lines:
 					for line in self.row_lines:
 						line.setPen(QPen(Qt.GlobalColor.red, 2))
@@ -439,7 +437,7 @@ class CustomizeScene(QGraphicsScene):
 				'  <meta charset="UTF-8">',
 				'  <title>导出表格</title>',
 				'  <style>',
-				'    block_detector { '
+				'    table { '
 				'              border-collapse: collapse; '
 				'              width: 60%;'
 				'              margin:20px auto;'
@@ -462,7 +460,7 @@ class CustomizeScene(QGraphicsScene):
 				'  </style>',
 				'</head>',
 				'<body>',
-				'  <block_detector>',
+				'  <table>',
 				'    <thead>',
 				'      <tr>'
 			])
@@ -483,7 +481,7 @@ class CustomizeScene(QGraphicsScene):
 
 				# 闭合标签
 				html.extend([
-					'  </block_detector>',
+					'  </table>',
 					'</body>',
 					'</html>'
 				])
@@ -508,8 +506,6 @@ class CustomizeScene(QGraphicsScene):
 		self.current_mode = None
 		self.background_pixmap = None
 		self.export_flag = False
-		# self.draw_mode = None
-		# self.current_line = None
 		self.col_lines.clear()
 		self.row_lines.clear()
 		self.bias_lines.clear()

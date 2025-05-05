@@ -24,13 +24,14 @@ from project.table_convertor import Convertor
 class TableDetectionWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
+		self.width_number = None
 		self.background_pixmap = None
 		self.status_bar = None
 		self.init_scene = None
-		self.btn_height_minus = None
-		self.btn_height_plus = None
-		self.btn_width_minus = None
-		self.btn_width_plus = None
+		# self.btn_height_minus = None
+		# self.btn_height_plus = None
+		# self.btn_width_minus = None
+		# self.btn_width_plus = None
 		self.toggle_box = None
 		self.combox = None
 		self.view = CustomizeView()
@@ -115,7 +116,6 @@ class TableDetectionWindow(QMainWindow):
 		)
 
 	def init_tool_widget(self):
-		print("enter init tool widget")
 		self.widget_layout = QVBoxLayout()
 		self.widget_layout.setContentsMargins(5, 0, 5, 0)
 		tool_layout = QHBoxLayout()
@@ -149,7 +149,6 @@ class TableDetectionWindow(QMainWindow):
 			button.setEnabled(False)
 
 		self.widget_layout.addStretch(1)
-		print("end init tool widget")
 
 	def init_rect_toolbar(self):
 		main_layout = QVBoxLayout()
@@ -988,8 +987,8 @@ class TableDetectionWindow(QMainWindow):
 		print("enter initTableStructure")
 		rows = LinesUtils.identify_rows(self.structure_detector.table_info, 25)
 		columns = LinesUtils.identify_columns(self.structure_detector.table_info, 25)
-		row_lines = LinesUtils.drawRowLines(rows)
-		col_lines = LinesUtils.drawColLines(columns)
+		row_lines = LinesUtils.draw_row_lines(rows)
+		col_lines = LinesUtils.draw_col_lines(columns)
 		base_x = self.scene.start_point_x
 		base_y = self.scene.start_point_y
 		# 绘制垂直线
@@ -1029,8 +1028,8 @@ class TableDetectionWindow(QMainWindow):
 
 	def standardize_length_table(self):
 		print("enter standardizeTable")
-		self.scene.col_lines = LinesUtils.sortLines(self.scene.col_lines, 1)
-		self.scene.row_lines = LinesUtils.sortLines(self.scene.row_lines, 2)
+		self.scene.col_lines = LinesUtils.sort_lines(self.scene.col_lines, 1)
+		self.scene.row_lines = LinesUtils.sort_lines(self.scene.row_lines, 2)
 
 		origin_x1 = self.scene.col_lines[0].line().x1()
 		origin_x2 = self.scene.col_lines[-1].line().x1()
@@ -1315,7 +1314,6 @@ class TableDetectionWindow(QMainWindow):
 			""")
 
 	def save_as_file(self):
-		print("enter save")
 		"""可以导出为pdf"""
 		flag = False
 		if self.file_name.text() != "":
@@ -1370,10 +1368,8 @@ class TableDetectionWindow(QMainWindow):
 					QMessageBox.warning(self, "消息提示", "文件保存失败!")
 		else:
 			QMessageBox.warning(self, "消息提示", "请选择一种保存格式!")
-		print("end save")
 
 	def open_edit_window(self):
-		print("enter openEditWindow")
 		if isinstance(self.selected_item, MovableRectItem):
 			self.update_label()
 			if self.edit_window is None:
@@ -1399,10 +1395,8 @@ class TableDetectionWindow(QMainWindow):
 				self.edit_window.activateWindow()
 		else:
 			pass
-		print("end openEditWindow")
 
 	def update_edit_window_status(self):
-		print("enter updateEditWindowStatus")
 		self.edit_window_show = False
 		self.change_lines_selected(self.edit_window_show)
 		self.update_label()
@@ -1411,8 +1405,6 @@ class TableDetectionWindow(QMainWindow):
 		if not self.rect_isvisible:
 			self.display_rect_border()
 			self.rect_isvisible = True
-
-		print("end updateEditWindowStatus")
 
 	def change_lines_selected(self, state):
 		if state is True:
@@ -1516,14 +1508,13 @@ class TableDetectionWindow(QMainWindow):
 				return
 
 			for rect in selected_rects:
-				rect.reSize(width, height)
+				rect.resize(width, height)
 
 			self.scene.update()  # 刷新场景
 		else:
 			QMessageBox.warning(self, "操作提示", "请先选择一张图片!")
 
 	def adjust_rect_size_step(self, dimension, operation):
-		print("enter adjust_rect_size_step")
 		"""调整矩形尺寸"""
 		if isinstance(self.selected_item, MovableRectItem):
 			rect = self.selected_item.rect()
@@ -1559,11 +1550,9 @@ class TableDetectionWindow(QMainWindow):
 				return
 		else:
 			pass
-		print("end adjust_rect_size_step")
 
 	# 更新矩形尺寸（保持左上角位置不变）
 	def hide_rect_border(self):
-		print("enter hideRectBorder")
 		list_items = self.scene.items()
 		if list_items is not None:
 			if self.rect_isvisible:
@@ -1577,10 +1566,8 @@ class TableDetectionWindow(QMainWindow):
 							pen.setColor(QColor(Qt.GlobalColor.red))
 						pen.setWidth(2)
 						item.setPen(pen)
-		print("end hideRectBorder")
 
 	def display_rect_border(self):
-		print("enter displayRectBorder")
 		list_items = self.scene.items()
 		if list_items is not None:
 			for item in list_items:
@@ -1588,15 +1575,12 @@ class TableDetectionWindow(QMainWindow):
 					pen = QPen(QColor(Qt.GlobalColor.green))
 					pen.setWidth(2)
 					item.setPen(pen)
-		print("end displayRectBorder")
 
 	def modify_block(self):
-		print("enter modifyBlock")
 		if self.selected_item is not None and isinstance(self.selected_item, MovableRectItem):
 			self.selected_item.text = self.edit_window.get_content()
-			self.selected_item.setViewText(self.selected_item.text)
+			self.selected_item.set_view_text(self.selected_item.text)
 			self.selected_item.adjust_text_position()
-		print("end modifyBlock")
 
 	def adjust_vertical_lines(self):
 		input_text = self.vertical_edit.text()
@@ -1712,7 +1696,6 @@ class TableDetectionWindow(QMainWindow):
 				"处理结果",
 				"\n\n".join(msg) if msg else "没有选择任何文件"
 			)
-
 
 	def con_to_pdf(self):
 		flag = False
@@ -1847,7 +1830,6 @@ class TableDetectionWindow(QMainWindow):
 					self.scene.row_lines.append(items[0])
 
 	def standardize_special_lines_pos(self):
-		print("enter standardize special lines pos")
 		for line_item in self.scene.special_col_lines:
 			line_item.get_correct_pos_y()
 			(flag, pos_y, length) = self.is_near_row(self.scene.row_lines,
@@ -1861,7 +1843,6 @@ class TableDetectionWindow(QMainWindow):
 					line.setLength(length)
 					line_item.setLine(line)
 				line_item.get_correct_pos_y()
-		print("end standardize special lines pos")
 
 	def is_near_row(self, row_lines, line_item):
 		r1 = False

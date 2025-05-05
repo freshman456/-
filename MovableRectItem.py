@@ -1,7 +1,6 @@
-from PyQt6.QtCore import QRect, QRectF, Qt, pyqtSignal
+from PyQt6.QtCore import  QRectF, Qt
 from PyQt6.QtGui import QBrush, QFont, QPainter
-from PyQt6.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem, QLabel
-import re
+from PyQt6.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem
 
 from project.LinesUtils import LinesUtils
 
@@ -22,6 +21,8 @@ class MovableRectItem(QGraphicsRectItem):
 		self.viewText = ""
 		self.text_item = QGraphicsTextItem(self)
 		self.text_item.setDefaultTextColor(Qt.GlobalColor.blue)
+		self.col = 0
+		self.row = 0
 
 		font = QFont()
 		font.setPointSize(12)  # 字体大小（单位：点）
@@ -31,10 +32,9 @@ class MovableRectItem(QGraphicsRectItem):
 		self.text_item.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
 		self.text_item.setZValue(1)  # 确保文本在矩形上层
 		if rect is not None:
-			self.setViewText(text)
+			self.set_view_text(text)
 
-		self.col = 0
-		self.row = 0
+
 
 	def paint(self, painter: QPainter, option, widget=None):
 		# 自定义绘制样式
@@ -51,25 +51,22 @@ class MovableRectItem(QGraphicsRectItem):
 			rect.center().y() - text_rect.height() / 2
 		)
 
-	def mouseDoubleClickEvent(self, event):
-		super().mouseDoubleClickEvent(event)
-
 	def itemChange(self, change, value):
 		# 位置/尺寸变化时调整文本位置
 		if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged or \
 				change == QGraphicsItem.GraphicsItemChange.ItemTransformHasChanged:
 			self.adjust_text_position()
-			self.setViewText(self.text)
+			self.set_view_text(self.text)
 		return super().itemChange(change, value)
 
-	def reSize(self, width, height):
+	def resize(self, width, height):
 		""" 设置新尺寸并保持中心点不变 """
 		old_center = self.rect().center()
 		new_rect = QRectF(0, 0, width, height)
 		new_rect.moveCenter(old_center)
 		self.setRect(new_rect)
 
-	def setViewText(self, text):
+	def set_view_text(self, text):
 		if len(text) <= 3:
 			self.viewText = text
 		# 160->8个汉字 16个英文字母

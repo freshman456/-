@@ -56,7 +56,7 @@ class CustomizeView(QGraphicsView):
 				self.scene().removeItem(self.current_rect_item)
 			else:
 				self.current_rect_item.adjust_text_position()
-				self.current_rect_item.setViewText(text="文本")
+				self.current_rect_item.set_view_text(text="文本")
 				rect = QRectF(0, 0, final_rect.width(), final_rect.height())
 				self.current_rect_item.setRect(rect)
 				self.current_rect_item.setPos(final_rect.x(), final_rect.y())

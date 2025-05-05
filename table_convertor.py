@@ -2,7 +2,6 @@ import html
 import os
 
 import docx
-from docx.enum.section import WD_ORIENT
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from lxml import html as xhtml
@@ -31,8 +30,8 @@ class Convertor:
 		if mode == 1:
 			doc = Document(file_path)
 			table = doc.tables[0]
-			# rows = len(block_detector.rows)
-			# columns = len(block_detector.columns)
+			# rows = len(table.rows)
+			# columns = len(table.columns)
 			list_cells = []
 			texts = []
 			for row_idx, row in enumerate(table.rows):
@@ -49,7 +48,7 @@ class Convertor:
 				# 存储提取到的文本和该行单元格信息
 				list_cells.append(row_cells)
 				texts.append(text)
-			Convertor.pdf_convertor(list_cells, texts, file_name=file_name)
+			Convertor.word_to_pdf(list_cells, texts, file_name=file_name)
 			return True
 		elif mode == 2:
 			try:
@@ -139,10 +138,10 @@ class Convertor:
 				pass  # 截断错误信息避免过长
 
 	@staticmethod
-	def pdf_convertor(list_cells, texts, file_name="word_to_pdf.pdf"):
+	def word_to_pdf(list_cells, texts, file_name="word_to_pdf.pdf"):
 
-		Convertor.register_font()
 		# 获取所有已注册的字体名称
+		Convertor.register_font()
 
 		font_name = "simhei"
 		font_size = 11
@@ -212,7 +211,7 @@ class Convertor:
 
 		for row_cells in list_cells:
 			for cells in row_cells:
-				Convertor.cellStyle(style, cells)
+				Convertor.cell_style(style, cells)
 		table.setStyle(style)
 		table.hAlign = 'CENTER'  # 设置表格在页面中水平居中
 		# 构建PDF文档
@@ -220,13 +219,13 @@ class Convertor:
 		doc.build(elements)
 
 	@staticmethod
-	def cellStyle(style, cells):
+	def cell_style(style, cells):
 		if cells.color:
 			(r, g, b) = Convertor.hex_to_rgb(cells.color)
 			style.add('TEXTCOLOR', (cells.row - 1, cells.col - 1), (cells.row - 1, cells.col - 1), (r, g, b))
 
 	@staticmethod
-	def convertToHtml(list_cells):
+	def word_to_html(list_cells):
 		html_lines = ['<!DOCTYPE html>']
 		html_lines.append('<html lang="zh-CN">')
 		html_lines.append('<head>')
@@ -246,7 +245,7 @@ class Convertor:
 		           align-items: center;
 		       }
 
-		       .block_detector-container {
+		       .table-container {
 		           background: white;
 		           border-radius: 12px;
 		           box-shadow: 0 8px 24px rgba(0,0,0,0.05);
@@ -255,13 +254,13 @@ class Convertor:
 		           max-width: 90vw;
 		       }
 
-		       .data-block_detector {
+		       .data-table {
 		           border-collapse: collapse;
 		           width: auto;
 		           min-width: 600px;
 		       }
 
-		       .data-block_detector td {
+		       .data-table td {
 		           padding: 14px 20px;
 		           border: 1px solid #e4e7ed;
 		           transition: all 0.2s ease;
@@ -271,11 +270,11 @@ class Convertor:
 		           line-height: 1.5;
 		       }
 
-		       .data-block_detector tr:nth-child(even) td {
+		       .data-table tr:nth-child(even) td {
 		           background-color: #f8f9fa;
 		       }
 
-		       .data-block_detector tr:hover td {
+		       .data-table tr:hover td {
 		           background-color: #f5f7fa;
 		           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 		       }
@@ -289,8 +288,8 @@ class Convertor:
 		html_lines.append('</style>')
 		html_lines.append('</head>')
 		html_lines.append('<body>')
-		html_lines.append('<div class="block_detector-container">')
-		html_lines.append('<block_detector class="data-block_detector">')
+		html_lines.append('<div class="table-container">')
+		html_lines.append('<table class="data-table">')
 
 		for row_cells in list_cells:
 			html_lines.append('<tr>')
@@ -318,7 +317,7 @@ class Convertor:
 				html_lines.append(f'<td {" ".join(attrs)}>{text}</td>')
 			html_lines.append('</tr>')
 
-		html_lines.append('</block_detector>')
+		html_lines.append('</table>')
 		html_lines.append('</div>')
 		html_lines.append('</body>')
 		html_lines.append('</html>')
@@ -326,7 +325,7 @@ class Convertor:
 
 	@staticmethod
 	def fix_table_borders(element):
-		if element.type == "block_detector":
+		if element.type == "table":
 			# 删除无效的横线（如 "-----"）
 			for row in element.cells:
 				for cell in row:
@@ -406,7 +405,9 @@ class Convertor:
 				# 使用lxml解析HTML
 				tree = xhtml.fromstring(html_content)
 				# 提取所有表格
-				tables = tree.xpath('//block_detector')
+				tables = tree.xpath('//table')
+				if tables is None or len(tables) == 0:
+					return False
 				# 如果有多个表格，可以选择第一个或全部
 				if tables:
 					# 提取第一个表格
@@ -415,7 +416,7 @@ class Convertor:
 					table_html = xhtml.tostring(table, encoding='unicode')
 					# 使用BeautifulSoup解析HTML表格
 					soup = BeautifulSoup(table_html, 'lxml')
-					table = soup.find('block_detector')
+					table = soup.find('table')
 					rows = table.find_all('tr')
 					# 创建Word文档
 					doc = Document()
@@ -447,8 +448,7 @@ class Convertor:
 							word_row[i].text = cell.get_text()
 					# 调整表格列宽（可选）
 					for column in word_table.columns:
-						column.width = 1000000  # 设置列宽为2厘米（2000000 twips）
-
+						column.width = 2000000  # 设置列宽为2厘米（2000000 twips）
 					# 保存Word文档
 					folder_path = r".\output_word"
 					os.makedirs(folder_path, exist_ok=True)
@@ -479,7 +479,7 @@ class Convertor:
 				# 存储提取到的文本和该行单元格信息
 				list_cells.append(row_cells)
 
-			html_content = Convertor.convertToHtml(list_cells)
+			html_content = Convertor.word_to_html(list_cells)
 			folder_path = r".\output_html"
 			os.makedirs(folder_path, exist_ok=True)
 			full_path = os.path.join(folder_path, file_name)
@@ -502,41 +502,41 @@ class Convertor:
 			<head>
 			    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 			    <style>
-			        .data-block_detector {{
+			        .data-table {{
 			            width: 80%;
 			            margin: 20px auto;
 			            border-collapse: collapse;
 			            font-family: Arial, sans-serif;
 			            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 			        }}
-			        .data-block_detector td, .data-block_detector th {{
+			        .data-table td, .data-table th {{
 			            padding: 12px 15px;
 			            text-align: center;
 			            border: 1px solid #ddd;
 			        }}
-			        .data-block_detector tbody tr:nth-child(even) {{
+			        .data-table tbody tr:nth-child(even) {{
 			            background-color: #f9f9f9;
 			        }}
-			        .data-block_detector tbody tr:hover {{
+			        .data-table tbody tr:hover {{
 			            background-color: #f1f1f1;
 			            transition: background-color 0.3s;
 			        }}
-			        .block_detector-container {{
+			        .table-container {{
 			            width: 100%;
 			            overflow-x: auto;
 			        }}
 			    </style>
 			</head>
 			<body>
-			    <div class="block_detector-container">
-			        <block_detector class="data-block_detector">
+			    <div class="table-container">
+			        <table class="data-table">
 			            <tbody>
 			                {''.join(
 				f'<tr>{"".join(f"<td>{html.escape(str(cell))}</td>" for cell in row)}</tr>'
 				for row in table
 			)}
 			            </tbody>
-			        </block_detector>
+			        </table>
 			    </div>
 			</body>
 			</html>
