@@ -54,12 +54,6 @@ class CustomizeScene(QGraphicsScene):
 		# 绘制背景图片
 		if self.background_pixmap is not None and self.export_flag is False:
 			rect = self.background_pixmap.rect()
-			# c1 = int(self.sceneRect().width() / 2)
-			# c2 = int(self.sceneRect().height() / 2)
-			# x = int(rect.width() / 2)
-			# y = int(rect.height() / 2)
-			# # self.start_point_x = int(c1-x)
-			# # self.start_point_y = int(c2-y)
 			rect = QRect(self.start_point_x, self.start_point_y, rect.width(), rect.height())
 			painter.drawPixmap(rect, self.background_pixmap, self.background_pixmap.rect())
 

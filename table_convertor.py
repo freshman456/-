@@ -231,70 +231,51 @@ class Convertor:
 		html_lines.append('<head>')
 		html_lines.append('<meta charset="UTF-8">')
 		html_lines.append('<meta name="viewport" content="width=device-width, initial-scale=1.0">')
-		html_lines.append('<title>优雅表格</title>')
+		html_lines.append('<title>标准表格</title>')
 		html_lines.append('<style>')
-		# 全局样式
+		# 基础样式
 		html_lines.append('''
-		       body {
-		           font-family: 'Segoe UI', system-ui, sans-serif;
-		           background: #f0f2f5;
-		           margin: 0;
-		           min-height: 100vh;
-		           display: flex;
-		           justify-content: center;
-		           align-items: center;
-		       }
+		    body {
+		        font-family: 'Segoe UI', system-ui, sans-serif;
+		        margin: 20px;
+		    }
 
-		       .table-container {
-		           background: white;
-		           border-radius: 12px;
-		           box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-		           padding: 24px;
-		           overflow-x: auto;
-		           max-width: 90vw;
-		       }
+		    table {
+		        border-collapse: collapse;
+		        width: auto;
+		        margin: 12px auto;
+		        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+		    }
 
-		       .data-table {
-		           border-collapse: collapse;
-		           width: auto;
-		           min-width: 600px;
-		       }
+		    td {
+		        padding: 12px 16px;
+		        border: 1px solid #4c4c4c;
+		        color: #333;
+		        font-size: 14px;
+		        transition: background 0.2s ease;
+		    }
 
-		       .data-table td {
-		           padding: 14px 20px;
-		           border: 1px solid #e4e7ed;
-		           transition: all 0.2s ease;
-		           position: relative;
-		           color: #606266;
-		           font-size: 14px;
-		           line-height: 1.5;
-		       }
+		    /* 保留悬停效果 */
+		    tr:hover td {
+		        background: #f5f5f5 !important;
+		        cursor: default;
+		    }
 
-		       .data-table tr:nth-child(even) td {
-		           background-color: #f8f9fa;
-		       }
-
-		       .data-table tr:hover td {
-		           background-color: #f5f7fa;
-		           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-		       }
-
-		       /* 动态样式 */
-		       .text-bold { font-weight: 600; }
-		       .text-italic { font-style: italic; }
-		       .text-large { font-size: 16px; }
-		       .text-xlarge { font-size: 18px; }
-		   ''')
+		    /* 动态样式 */
+		    .text-bold { font-weight: 600; }
+		    .text-italic { font-style: italic; }
+		    .text-large { font-size: 15px; }
+		    .text-xlarge { font-size: 16px; }
+		''')
 		html_lines.append('</style>')
 		html_lines.append('</head>')
 		html_lines.append('<body>')
-		html_lines.append('<div class="table-container">')
-		html_lines.append('<table class="data-table">')
+		html_lines.append('<table>')
 
 		for row_cells in list_cells:
 			html_lines.append('<tr>')
 			for cell in row_cells:
-				# 动态生成类名
+				# 动态生成类名（保留原有逻辑）
 				classes = []
 				if cell.bold:
 					classes.append('text-bold')
@@ -304,21 +285,18 @@ class Convertor:
 					if cell.size > 14:
 						classes.append('text-xlarge' if cell.size > 16 else 'text-large')
 
-				# 构建单元格属性
 				attrs = []
 				if classes:
 					attrs.append(f'class="{" ".join(classes)}"')
 				if cell.color:
 					attrs.append(f'style="color: {cell.color}"')
 
-				# 转义文本内容
 				text = html.escape(cell.text) if cell.text is not None else '&nbsp;'
 
 				html_lines.append(f'<td {" ".join(attrs)}>{text}</td>')
 			html_lines.append('</tr>')
 
 		html_lines.append('</table>')
-		html_lines.append('</div>')
 		html_lines.append('</body>')
 		html_lines.append('</html>')
 		return '\n'.join(html_lines)
@@ -359,7 +337,7 @@ class Convertor:
 			# 遍历所有表格
 			for table in doc.tables:
 				# ------------ 设置表格整体属性 ------------
-				table.autofit = True  # 开启自动调整
+				table.autofit = False
 				table.alignment = WD_TABLE_ALIGNMENT.CENTER  # 表格居中
 				table.width = Inches(7.5)  # 根据页边距计算宽度（A4宽8.27-左右边距0.8*2=6.67，适当留白）
 
@@ -561,3 +539,101 @@ class Convertor:
 			return True
 		except Exception as e:
 			return False
+
+		# html_lines = ['<!DOCTYPE html>']
+		# html_lines.append('<html lang="zh-CN">')
+		# html_lines.append('<head>')
+		# html_lines.append('<meta charset="UTF-8">')
+		# html_lines.append('<meta name="viewport" content="width=device-width, initial-scale=1.0">')
+		# html_lines.append('<title>html表格</title>')
+		# html_lines.append('<style>')
+		# # 全局样式
+		# html_lines.append('''
+		#        body {
+		#            font-family: 'Segoe UI', system-ui, sans-serif;
+		#            background: #f0f2f5;
+		#            margin: 0;
+		#            min-height: 100vh;
+		#            display: flex;
+		#            justify-content: center;
+		#            align-items: center;
+		#        }
+		#
+		#        .table-container {
+		#            background: white;
+		#            border-radius: 12px;
+		#            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+		#            padding: 24px;
+		#            overflow-x: auto;
+		#            max-width: 90vw;
+		#            margin:0 auto;
+		#        }
+		#
+		#        .data-table {
+		#            border-collapse: collapse;
+		#            width: auto;
+		#            min-width: 600px;
+		#        }
+		#
+		#        .data-table td {
+		#            padding: 14px 20px;
+		#            border: 1px solid #e4e7ed;
+		#            transition: all 0.2s ease;
+		#            position: relative;
+		#            color: #606266;
+		#            font-size: 14px;
+		#            line-height: 1.5;
+		#        }
+		#
+		#        .data-table tr:nth-child(even) td {
+		#            background-color: #f8f9fa;
+		#        }
+		#
+		#        .data-table tr:hover td {
+		#            background-color: #f5f7fa;
+		#            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+		#        }
+		#
+		#        /* 动态样式 */
+		#        .text-bold { font-weight: 600; }
+		#        .text-italic { font-style: italic; }
+		#        .text-large { font-size: 16px; }
+		#        .text-xlarge { font-size: 18px; }
+		#    ''')
+		# html_lines.append('</style>')
+		# html_lines.append('</head>')
+		# html_lines.append('<body>')
+		# html_lines.append('<div class="table-container">')
+		# html_lines.append('<table class="data-table">')
+		#
+		# for row_cells in list_cells:
+		# 	html_lines.append('<tr>')
+		# 	for cell in row_cells:
+		# 		# 动态生成类名
+		# 		classes = []
+		# 		if cell.bold:
+		# 			classes.append('text-bold')
+		# 		if cell.italic:
+		# 			classes.append('text-italic')
+		# 		if cell.size:
+		# 			if cell.size > 14:
+		# 				classes.append('text-xlarge' if cell.size > 16 else 'text-large')
+		#
+		# 		# 构建单元格属性
+		# 		attrs = []
+		# 		if classes:
+		# 			attrs.append(f'class="{" ".join(classes)}"')
+		# 		if cell.color:
+		# 			attrs.append(f'style="color: {cell.color}"')
+		#
+		# 		# 转义文本内容
+		# 		text = html.escape(cell.text) if cell.text is not None else '&nbsp;'
+		#
+		# 		html_lines.append(f'<td {" ".join(attrs)}>{text}</td>')
+		# 	html_lines.append('</tr>')
+		#
+		# html_lines.append('</table>')
+		# html_lines.append('</div>')
+		# html_lines.append('</body>')
+		# html_lines.append('</html>')
+		# return '\n'.join(html_lines)

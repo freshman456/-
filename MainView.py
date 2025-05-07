@@ -1,23 +1,21 @@
 import os
-
-from PyQt6.QtGui import QColor, QIcon, QImage, QPainter, QPen, QPixmap
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, \
-	QLabel, QLineEdit, QMessageBox, QPushButton, QSizePolicy, QSpacerItem, QSpinBox, QStatusBar, QTextEdit
-from PyQt6.QtCore import QDir, QLineF, QPoint, QRect, QRectF, Qt
-
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QGraphicsView, QGraphicsScene,
-                             QHBoxLayout, QVBoxLayout, QWidget)
-from matplotlib.hatch import SouthEastHatch
+
+from PyQt6.QtCore import QDir, QPoint, QRect, Qt
+from PyQt6.QtGui import QColor, QIcon, QImage, QPainter, QPen, QPixmap
+from PyQt6.QtWidgets import QApplication, QGraphicsScene, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QGraphicsItem,
+                             QGraphicsLineItem, QGraphicsRectItem, \
+                             QLabel, QLineEdit, QMessageBox, QPushButton, QSpinBox, QTextEdit)
 
 from BlockDetection import BlockDetection
 from project.CustomizeScene import CustomizeScene
+from project.CustomizeView import CustomizeView
+from project.EditRectWindow import EditRectWindow
 from project.LinesUtils import LinesUtils
 from project.MovableLineItem import MovableLineItem
 from project.MovableRectItem import MovableRectItem
-from project.EditRectWindow import EditRectWindow
 from project.StructureDetection import StructureDetection
-from project.CustomizeView import CustomizeView
 from project.table_convertor import Convertor
 
 
@@ -28,10 +26,6 @@ class TableDetectionWindow(QMainWindow):
 		self.background_pixmap = None
 		self.status_bar = None
 		self.init_scene = None
-		# self.btn_height_minus = None
-		# self.btn_height_plus = None
-		# self.btn_width_minus = None
-		# self.btn_width_plus = None
 		self.toggle_box = None
 		self.combox = None
 		self.view = CustomizeView()
@@ -174,6 +168,7 @@ class TableDetectionWindow(QMainWindow):
 
 		addBtn = QPushButton("增加矩形")
 		addBtn.setStyleSheet("border: 1px solid white;")
+		addBtn.setShortcut("Ctrl+Q")
 		pixmap = QPixmap("imgs/rect.png")
 		addBtn.setFixedSize(80, 25)
 		addBtn.setIcon(QIcon(pixmap))
@@ -192,6 +187,7 @@ class TableDetectionWindow(QMainWindow):
 								background-color: #00aaff;
 							}
 						""")
+
 
 		stop_button = QPushButton("编辑文字")
 		stop_button.setFixedSize(80, 25)
@@ -778,24 +774,6 @@ class TableDetectionWindow(QMainWindow):
 		delete_btn.clicked.connect(self.delete_scene_items)
 		delete_btn.setShortcut("Ctrl+D")
 
-		transfer_btn = QPushButton()
-		transfer_btn.setFixedSize(80, 25)
-		transfer_btn.setText("图片预处理")
-		transfer_btn.setStyleSheet("""
-			QPushButton {
-					background-color: #55aaff;
-					border-radius:5px;
-					border-color:white;
-					font-size: 12px;
-					font-weight: bold;
-					color: black;
-					text-align: center;
-				}
-			QPushButton:hover {
-				background-color: #00aaff;
-			}
-		""")
-		transfer_btn.clicked.connect(self.image_trans)
 
 		exit_btn = QPushButton()
 		exit_btn.setFixedSize(80, 25)
@@ -836,7 +814,6 @@ class TableDetectionWindow(QMainWindow):
 		init_btn.clicked.connect(self.back_forward_scene)
 
 		btn_layout.addWidget(delete_btn)
-		btn_layout.addWidget(transfer_btn)
 		btn_layout.addWidget(init_btn)
 		btn_layout.addWidget(exit_btn)
 		btn_layout.addStretch(1)
@@ -922,14 +899,12 @@ class TableDetectionWindow(QMainWindow):
 		self.sys_buttons.append(delete_btn)
 		self.widget_layout.addLayout(main_layout)
 
-	def init_edit_scene(self):
-		print("xxxxx")
+	def init_edit_scene(self, selected_image):
 		if self.background_pixmap.isNull():
 			print("NULL")
 
 		self.scene = CustomizeScene()
 		self.scene.setSceneRect(0, 0, 900, 740)
-		self.pen = QPen(QColor(0, 0, 255), 2)  # 蓝色，2像素宽
 
 		scene = self.scene.sceneRect()
 		self.scene.scene_border = QGraphicsRectItem(scene)
@@ -953,6 +928,16 @@ class TableDetectionWindow(QMainWindow):
 			QPainter.RenderHint.Antialiasing |
 			QPainter.RenderHint.SmoothPixmapTransform
 		)
+		QApplication.processEvents()
+
+		self.block_detector.ocr(selected_image)
+		if self.block_detector.data is None or len(self.block_detector.data) == 0:
+			QMessageBox.warning(self, "消息提示", "所选图片中未识别到表格,请重新选择一张图片!")
+			self.status_bar.showMessage("开始界面")
+			return
+		# print(f"选择的文件路径: {file_path}")
+		self.structure_detector.detect_structure(selected_image)
+
 		self.view.end_draw_rect.connect(lambda: self.set_mode(pre_mode="box", mode="view"))
 		self.init_table_structure()
 		self.init_rect()
@@ -1114,7 +1099,7 @@ class TableDetectionWindow(QMainWindow):
 		# 打开文件选择对话框，只允许选择图片
 		file_dialog = QFileDialog()
 		file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")  # 设置过滤器，只显示图片文件
-		directory_path = "./trans"
+		directory_path = self.script_dir + "/trans"
 
 		# 检查目录是否存在
 		if QDir(directory_path).exists():
@@ -1128,14 +1113,13 @@ class TableDetectionWindow(QMainWindow):
 				file_path = selected_files[0]
 				if file_path is not None:
 					QMessageBox.information(self, "消息通知", f"图片上传成功!\n正在检测图片表格,图片路径:{file_path}")
-					self.block_detector.ocr(file_path)
-					if self.block_detector.data is None or len(self.block_detector.data) == 0:
-						QMessageBox.warning(self, "消息提示", "所选图片中未识别到表格,请重新选择一张图片!")
+					self.status_bar.showMessage("表格识别中...")
+					selected_image = self.image_trans(file_path)
+					if selected_image is None:
+						QMessageBox.warning(self, "消息提示", "未找到所选图片!")
 						return
-					self.background_pixmap = QPixmap(file_path)
-					# print(f"选择的文件路径: {file_path}")
-					self.structure_detector.detect_structure(file_path)
-					self.init_edit_scene()
+					self.background_pixmap = QPixmap.fromImage(selected_image)
+					self.init_edit_scene(selected_image)
 				else:
 					QMessageBox.warning(self, "消息提示", "未找到文件!")
 
@@ -1173,7 +1157,7 @@ class TableDetectionWindow(QMainWindow):
 						item.setPen(pen)
 						if item in self.scene.special_col_lines or item in self.scene.special_row_lines:
 							length = item.line().length()
-							self.length_number.setText(str(length))
+							self.length_number.setText(str(int(length)))
 					else:
 						if not item.special:
 							if item.pen().color() != Qt.GlobalColor.red:
@@ -1190,7 +1174,6 @@ class TableDetectionWindow(QMainWindow):
 		if len(select_items) == 0:
 			self.selected_item = None
 
-	# self.scene.clearSelection()
 	def set_button_style(self, mode):
 		if mode == "line":
 			self.line_buttons[0].setStyleSheet("""
@@ -1630,72 +1613,24 @@ class TableDetectionWindow(QMainWindow):
 				else:
 					new_value = current_value - step
 					line.setLength(new_value)
-					self.length_number.setText(str(new_value))
+					self.length_number.setText(str(int(new_value)))
 					self.selected_item.setLine(line)
 
-	def image_trans(self):
-		# 创建文件对话框
-		file_dialog = QFileDialog()
-		file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")
-		file_dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)  # 修改1：允许多选
-		file_dialog.setViewMode(QFileDialog.ViewMode.Detail)
+	def image_trans(self, selected_file):
 
-		# 显示文件对话框
-		if file_dialog.exec():
-			selected_files = file_dialog.selectedFiles()
-			success_count = 0  # 成功计数器
-			fail_list = []  # 失败文件列表
-			file_name = ""
-			# if len(selected_files) > 0:
-			try:
-				for file_path in selected_files:
-					# file_path = selected_files[0]
-					file_name = os.path.basename(file_path)
-					base_name, original_ext = os.path.splitext(file_name)
-					original_ext = original_ext.lstrip('.')  # 去掉点，得到 "jpg"
-					# 创建 QImage 对象
-					image = QImage(file_path)
-					if image.isNull():
-						QMessageBox.warning(self, "提示信息", "图片未成功加载!")
-						return
+		image = QImage(selected_file)
+		if image.isNull():
+			QMessageBox.warning(self, "提示信息", "图片未成功加载!")
+			return None
+		scaled_image = image.scaled(
+			int(900 * 0.85),
+			int(740 * 0.85),
+			Qt.AspectRatioMode.KeepAspectRatio,
+			Qt.TransformationMode.SmoothTransformation
+		)
+		return scaled_image
 
-					# 缩放图像
-					scaled_image = image.scaled(
-						int(900 * 0.8),
-						int(740 * 0.8),
-						Qt.AspectRatioMode.KeepAspectRatio,
-						Qt.TransformationMode.SmoothTransformation
-					)
-					folder_path = r".\trans"
-					os.makedirs(folder_path, exist_ok=True)
-					# 保存图像
-					output_ext = original_ext if original_ext.lower() in ['png', 'jpg', 'jpeg'] else 'png'
-					output_file = os.path.join(folder_path, f"{base_name}_trans.{output_ext}")
-					# 格式特殊处理
-					quality = 90  # JPG 质量参数
-					if output_ext.lower() in ['jpg', 'jpeg']:
-						success = scaled_image.save(output_file, "JPEG", quality)
-					else:
-						success = scaled_image.save(output_file, output_ext.upper())
-					if success:
-						success_count += 1
-					else:
-						fail_list.append(f"{file_name} (保存失败)")
-			except Exception as e:
-				fail_list.append(f"{file_name} ({str(e)})")
 
-			# 汇总显示结果
-			msg = []
-			if success_count > 0:
-				msg.append(f"成功处理 {success_count} 张图片")
-			if fail_list:
-				msg.append("失败文件:\n" + "\n".join(fail_list))
-
-			QMessageBox.information(
-				self,
-				"处理结果",
-				"\n\n".join(msg) if msg else "没有选择任何文件"
-			)
 
 	def con_to_pdf(self):
 		flag = False
@@ -1728,15 +1663,20 @@ class TableDetectionWindow(QMainWindow):
 							res = Convertor.convert_to_pdf(file_path, 1, file_name=self.file_name.text() + ".pdf")
 						else:
 							res = Convertor.convert_to_pdf(file_path, 1)
+							print(res)
 						if res:
 							QMessageBox.information(self, "消息提示", "成功转为pdf文件")
 							self.path_label.setText(self.script_dir + "\\out_pdf\\" + self.file_name.text())
 						else:
 							QMessageBox.information(self, "消息提示", "格式转换失败", )
 				elif file_ext == ".html":
-					Convertor.convert_to_pdf(file_path, 2)
+					res = Convertor.convert_to_pdf(file_path, 2)
+					if res:
+						QMessageBox.information(self, "消息提示", "成功转为pdf文件")
+					else:
+						QMessageBox.information(self, "消息提示", "格式转换失败", )
 				else:
-					QMessageBox.warning(self, "出现未知错误!", "消息提示")
+					QMessageBox.warning(self, "消息提示", "出现未知错误!")
 
 	def con_to_word(self):
 		flag = False
@@ -1909,3 +1849,86 @@ if __name__ == "__main__":
 	window.initUI()
 	window.show()
 	sys.exit(app.exec())
+
+
+
+# transfer_btn = QPushButton()
+# transfer_btn.setFixedSize(80, 25)
+# transfer_btn.setText("图片预处理")
+# transfer_btn.setStyleSheet("""
+# 	QPushButton {
+# 			background-color: #55aaff;
+# 			border-radius:5px;
+# 			border-color:white;
+# 			font-size: 12px;
+# 			font-weight: bold;
+# 			color: black;
+# 			text-align: center;
+# 		}
+# 	QPushButton:hover {
+# 		background-color: #00aaff;
+# 	}
+# """)
+# transfer_btn.clicked.connect(self.image_trans)
+
+# # if len(selected_files) > 0:
+	# try:
+	# 	for file_path in selected_files:
+	# 		# file_path = selected_files[0]
+	# 		file_name = os.path.basename(file_path)
+	# 		base_name, original_ext = os.path.splitext(file_name)
+	# 		original_ext = original_ext.lstrip('.')  # 去掉点，得到 "jpg"
+	# 		# 创建 QImage 对象
+	# 		image = QImage(file_path)
+	# 		if image.isNull():
+	# 			QMessageBox.warning(self, "提示信息", "图片未成功加载!")
+	# 			return
+	#
+	# 		# 缩放图像
+	# 		scaled_image = image.scaled(
+	# 			int(900 * 0.8),
+	# 			int(740 * 0.8),
+	# 			Qt.AspectRatioMode.KeepAspectRatio,
+	# 			Qt.TransformationMode.SmoothTransformation
+	# 		)
+	# 		folder_path = r".\trans"
+	# 		os.makedirs(folder_path, exist_ok=True)
+	# 		# 保存图像
+	# 		output_ext = original_ext if original_ext.lower() in ['png', 'jpg', 'jpeg'] else 'png'
+	# 		output_file = os.path.join(folder_path, f"{base_name}_trans.{output_ext}")
+	# 		# 格式特殊处理
+	# 		quality = 90  # JPG 质量参数
+	# 		if output_ext.lower() in ['jpg', 'jpeg']:
+	# 			success = scaled_image.save(output_file, "JPEG", quality)
+	# 		else:
+	# 			success = scaled_image.save(output_file, output_ext.upper())
+	# 		if success:
+	# 			success_count += 1
+	# 		else:
+	# 			fail_list.append(f"{file_name} (保存失败)")
+	# except Exception as e:
+	# 	fail_list.append(f"{file_name} ({str(e)})")
+	#
+	# # 汇总显示结果
+	# msg = []
+	# if success_count > 0:
+	# 	msg.append(f"成功处理 {success_count} 张图片")
+	# if fail_list:
+	# 	msg.append("失败文件:\n" + "\n".join(fail_list))
+	#
+	# QMessageBox.information(
+	# 	self,
+	# 	"处理结果",
+	# 	"\n\n".join(msg) if msg else "没有选择任何文件"
+	# )
+# 创建文件对话框
+# file_dialog = QFileDialog()
+# file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")
+# # file_dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)  # 修改1：允许多选
+# file_dialog.setViewMode(QFileDialog.ViewMode.Detail)
+#
+# # 显示文件对话框
+# if file_dialog.exec():
+# 	selected_file = file_dialog.selectedFiles()[0]
+# 	file_name = ""
+# 	if selected_file is not None:

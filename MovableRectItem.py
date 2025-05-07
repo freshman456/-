@@ -25,7 +25,7 @@ class MovableRectItem(QGraphicsRectItem):
 		self.row = 0
 
 		font = QFont()
-		font.setPointSize(12)  # 字体大小（单位：点）
+		font.setPointSize(14)  # 字体大小（单位：点）
 		font.setWeight(QFont.Weight.Medium)  # PyQt6 必须使用 QFont.Weight 枚举
 		self.text_item.setFont(font)
 
