@@ -14,7 +14,6 @@ class StructureDetection:
 		self.table_info = []
 
 	def detect_structure(self, image):
-		print("enter detect_structure")
 		self.table_info = []
 		if image is None:
 			return

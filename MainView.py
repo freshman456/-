@@ -16,12 +16,20 @@ from project.LinesUtils import LinesUtils
 from project.MovableLineItem import MovableLineItem
 from project.MovableRectItem import MovableRectItem
 from project.StructureDetection import StructureDetection
-from project.table_convertor import Convertor
+from project.TableConvertor import Convertor
 
 
 class TableDetectionWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
+		self.pdf_table_box = None
+		self.path_label = None
+		self.horizontal_edit = None
+		self.vertical_edit = None
+		self.file_name = None
+		self.rect_step_box = None
+		self.height_number = None
+		self.html_title_box = None
 		self.width_number = None
 		self.background_pixmap = None
 		self.status_bar = None
@@ -187,7 +195,6 @@ class TableDetectionWindow(QMainWindow):
 								background-color: #00aaff;
 							}
 						""")
-
 
 		stop_button = QPushButton("编辑文字")
 		stop_button.setFixedSize(80, 25)
@@ -595,8 +602,8 @@ class TableDetectionWindow(QMainWindow):
 		title_label.setStyleSheet("border:none")
 
 		self.file_name = QLineEdit()
-		self.file_name.setFixedSize(190, 25)
-		self.file_name.setPlaceholderText("文件名不能含有空格")
+		self.file_name.setFixedSize(230, 25)
+		self.file_name.setPlaceholderText("文件名不能含有空格,长度不超过8个字符")
 
 		file_name_layout.addWidget(title_label)
 		file_name_layout.addWidget(self.file_name)
@@ -633,7 +640,7 @@ class TableDetectionWindow(QMainWindow):
 		self.combox.addItem("pdf")
 		self.combox.addItem("html")
 		self.combox.setCurrentIndex(-1)
-		self.combox.setFixedSize(190, 25)
+		self.combox.setFixedSize(230, 25)
 
 		save_layout.addWidget(save_rect_btn)
 		save_layout.addWidget(self.combox)
@@ -648,7 +655,7 @@ class TableDetectionWindow(QMainWindow):
 		title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 		title_label.setStyleSheet("border:none")
 		self.path_label = QLabel()
-		self.path_label.setFixedSize(240, 25)
+		self.path_label.setFixedSize(280, 25)
 		self.path_label.setStyleSheet("""
 			QLabel {
 				background-color:white;
@@ -773,7 +780,6 @@ class TableDetectionWindow(QMainWindow):
 		""")
 		delete_btn.clicked.connect(self.delete_scene_items)
 		delete_btn.setShortcut("Ctrl+D")
-
 
 		exit_btn = QPushButton()
 		exit_btn.setFixedSize(80, 25)
@@ -901,7 +907,7 @@ class TableDetectionWindow(QMainWindow):
 
 	def init_edit_scene(self, selected_image):
 		if self.background_pixmap.isNull():
-			print("NULL")
+			QMessageBox.information(self,"消息提示","获取图片失败")
 
 		self.scene = CustomizeScene()
 		self.scene.setSceneRect(0, 0, 900, 740)
@@ -922,7 +928,7 @@ class TableDetectionWindow(QMainWindow):
 		for button in self.sys_buttons:
 			button.setEnabled(True)
 
-		self.status_bar.showMessage("表格检测")
+		self.status_bar.showMessage("表格检测中...")
 		self.view.setScene(self.scene)
 		self.view.setRenderHints(
 			QPainter.RenderHint.Antialiasing |
@@ -933,9 +939,9 @@ class TableDetectionWindow(QMainWindow):
 		self.block_detector.ocr(selected_image)
 		if self.block_detector.data is None or len(self.block_detector.data) == 0:
 			QMessageBox.warning(self, "消息提示", "所选图片中未识别到表格,请重新选择一张图片!")
+			self.view.setScene(self.init_scene)
 			self.status_bar.showMessage("开始界面")
 			return
-		# print(f"选择的文件路径: {file_path}")
 		self.structure_detector.detect_structure(selected_image)
 
 		self.view.end_draw_rect.connect(lambda: self.set_mode(pre_mode="box", mode="view"))
@@ -946,7 +952,6 @@ class TableDetectionWindow(QMainWindow):
 
 	def init_rect(self):
 		if self.block_detector.rect_points is not None:
-			print("开始进行点的计算")
 			for point, text, block in zip(self.block_detector.rect_points, self.block_detector.text,
 			                              self.block_detector.data):
 				rect = QRect(QPoint(point[0][0], point[0][1]), QPoint(point[2][0], point[2][1]))
@@ -966,53 +971,49 @@ class TableDetectionWindow(QMainWindow):
 		self.scene.endLineSignal.connect(lambda: self.set_mode(pre_mode="line", mode="view"))
 		self.scene.editSignal.connect(self.open_edit_window)
 		self.set_mode(pre_mode="view", mode="view")
-		print("end initRect")
 
 	def init_table_structure(self):
-		print("enter initTableStructure")
-		rows = LinesUtils.identify_rows(self.structure_detector.table_info, 25)
-		columns = LinesUtils.identify_columns(self.structure_detector.table_info, 25)
-		row_lines = LinesUtils.draw_row_lines(rows)
-		col_lines = LinesUtils.draw_col_lines(columns)
-		base_x = self.scene.start_point_x
-		base_y = self.scene.start_point_y
-		# 绘制垂直线
-		for vl in col_lines:
-			x = base_x + vl[0]
-			y_start = base_y
-			y_end = base_y + vl[1]
-			line = MovableLineItem(x, y_start, x, y_end)
-			line.setPen(QPen(Qt.GlobalColor.red, 2))
-			line.type = "type_y"
-			line.special = False
-			line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-			line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-			line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges, True)
+		if self.structure_detector.table_info is not None:
+			rows = LinesUtils.identify_rows(self.structure_detector.table_info, 25)
+			columns = LinesUtils.identify_columns(self.structure_detector.table_info, 25)
+			row_lines = LinesUtils.draw_row_lines(rows)
+			col_lines = LinesUtils.draw_col_lines(columns)
+			base_x = self.scene.start_point_x
+			base_y = self.scene.start_point_y
+			# 绘制垂直线
+			for vl in col_lines:
+				x = base_x + vl[0]
+				y_start = base_y
+				y_end = base_y + vl[1]
+				line = MovableLineItem(x, y_start, x, y_end)
+				line.setPen(QPen(Qt.GlobalColor.red, 2))
+				line.type = "type_y"
+				line.special = False
+				line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+				line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+				line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges, True)
 
-			self.scene.addItem(line)  # 红色
-			self.scene.col_lines.append(line)
+				self.scene.addItem(line)  # 红色
+				self.scene.col_lines.append(line)
 
-		# 绘制水平线
-		for hl in row_lines:
-			y = base_y + hl[0]
-			x_start = base_x
-			x_end = base_x + hl[1]
+			# 绘制水平线
+			for hl in row_lines:
+				y = base_y + hl[0]
+				x_start = base_x
+				x_end = base_x + hl[1]
 
-			line = MovableLineItem(x_start, y, x_end, y)
-			line.type = "type_x"
-			line.special = False
-			line.setPen(QPen(Qt.GlobalColor.red, 2))
-			line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-			line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-			line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges, True)
+				line = MovableLineItem(x_start, y, x_end, y)
+				line.type = "type_x"
+				line.special = False
+				line.setPen(QPen(Qt.GlobalColor.red, 2))
+				line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+				line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+				line.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges, True)
 
-			self.scene.addItem(line)  # 红色
-			self.scene.row_lines.append(line)
-
-		print("end initTableStructure")
+				self.scene.addItem(line)  # 红色
+				self.scene.row_lines.append(line)
 
 	def standardize_length_table(self):
-		print("enter standardizeTable")
 		self.scene.col_lines = LinesUtils.sort_lines(self.scene.col_lines, 1)
 		self.scene.row_lines = LinesUtils.sort_lines(self.scene.row_lines, 2)
 
@@ -1043,10 +1044,8 @@ class TableDetectionWindow(QMainWindow):
 
 		pos_y = origin_y1 + delta_y1
 		self.standardize_pos_table(pos_x=pos_x, pos_y=pos_y)
-		print("end standardizeTable")
 
 	def standardize_pos_table(self, pos_x, pos_y):
-		print("enter standardizePosTable")
 		for item in self.scene.row_lines:
 			if not item.special:
 				delta_x = pos_x - item.line().x1()
@@ -1061,10 +1060,8 @@ class TableDetectionWindow(QMainWindow):
 					delta_x = item.scenePos().x()
 					item.setPos(delta_x, delta_y)
 		self.standardize_special_lines_pos()
-		print("end standardizePosTable")
 
 	def set_mode(self, pre_mode, mode):
-		print("start mode")
 		self.scene.current_mode = mode
 		if mode == "line":
 			self.status_bar.showMessage("绘制线条中...")
@@ -1092,10 +1089,8 @@ class TableDetectionWindow(QMainWindow):
 						if isinstance(item, MovableRectItem) or isinstance(item, MovableLineItem):
 							item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
 		self.set_button_style(mode=mode)
-		print("end mode")
 
 	def file_upload(self):
-		print("start fileUpload")
 		# 打开文件选择对话框，只允许选择图片
 		file_dialog = QFileDialog()
 		file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")  # 设置过滤器，只显示图片文件
@@ -1140,9 +1135,11 @@ class TableDetectionWindow(QMainWindow):
 						pen.setWidth(2)
 						item.setPen(pen)
 						if self.edit_window_show:
-							self.edit_window.display_block(content=text, width=width, height=height)
+							self.edit_window.display_block(viewText=item.viewText,
+							                               content=text, width=width, height=height)
 					else:
-						if item.pen().color() != Qt.GlobalColor.green and item.pen().color() != Qt.GlobalColor.transparent:
+						if (item.pen().color() != Qt.GlobalColor.green
+								and item.pen().color() != Qt.GlobalColor.transparent):
 							if self.edit_window_show or self.rect_isvisible is False:
 								pen = QPen(QColor(Qt.GlobalColor.transparent))
 							else:
@@ -1304,7 +1301,9 @@ class TableDetectionWindow(QMainWindow):
 		if flag and ' ' in self.file_name.text():
 			QMessageBox.warning(self, "消息提示", "文件名不能包含空格!")
 			return
-
+		if len(self.file_name.text()) > 8:
+			QMessageBox.warning(self, "消息提示", "文件名超过了8个字符!")
+			return
 		current_index = self.combox.currentIndex()
 		# 导出为word
 		if current_index == 0:
@@ -1384,6 +1383,7 @@ class TableDetectionWindow(QMainWindow):
 		self.change_lines_selected(self.edit_window_show)
 		self.update_label()
 		self.scene.clearSelection()
+		self.selected_item.set_view_text(self.selected_item.text)
 		self.selected_item = None
 		if not self.rect_isvisible:
 			self.display_rect_border()
@@ -1447,9 +1447,7 @@ class TableDetectionWindow(QMainWindow):
 		self.scene.clearSelection()
 
 	def display_rect(self):
-		print("enter displayRect")
 		if self.rect_isvisible is None:
-			self.scene.set_lines_not_mov()
 			self.view_rect_btn.setText("隐藏绿色方框")
 			self.view_rect()
 			self.rect_isvisible = True
@@ -1463,7 +1461,6 @@ class TableDetectionWindow(QMainWindow):
 				self.display_rect_border()
 				self.rect_isvisible = True
 				self.view_rect_btn.setText("隐藏绿色方框")
-		print("end displayRect")
 
 	def view_rect(self):
 		items = self.scene.items()
@@ -1477,6 +1474,9 @@ class TableDetectionWindow(QMainWindow):
 		try:
 			width = float(self.width_number.text())
 			height = float(self.height_number.text())
+			if width <= 0 or height <= 0:
+				QMessageBox.warning(self, "消息提示", "矩形框长度不能为负数或零!")
+				return
 		except ValueError:
 			QMessageBox.warning(self, "输入错误", "请输入有效的数字")
 			return
@@ -1591,8 +1591,12 @@ class TableDetectionWindow(QMainWindow):
 		for line_item in items:
 			line = line_item.line()
 			length = line.length()
-			line.setLength(length - input_length)
-			line_item.setLine(line)
+			if length - input_length > 0:
+				line.setLength(length - input_length)
+				line_item.setLine(line)
+			else:
+				QMessageBox.warning(self, "操作提示", "减少长度超过线条长度，请重新输入!")
+				return
 
 	def adjust_special_length_step(self, operation):
 		if self.selected_item is None or isinstance(self.selected_item, MovableRectItem):
@@ -1630,8 +1634,6 @@ class TableDetectionWindow(QMainWindow):
 		)
 		return scaled_image
 
-
-
 	def con_to_pdf(self):
 		flag = False
 		if self.file_name.text() != "":
@@ -1663,12 +1665,11 @@ class TableDetectionWindow(QMainWindow):
 							res = Convertor.convert_to_pdf(file_path, 1, file_name=self.file_name.text() + ".pdf")
 						else:
 							res = Convertor.convert_to_pdf(file_path, 1)
-							print(res)
 						if res:
 							QMessageBox.information(self, "消息提示", "成功转为pdf文件")
 							self.path_label.setText(self.script_dir + "\\out_pdf\\" + self.file_name.text())
 						else:
-							QMessageBox.information(self, "消息提示", "格式转换失败", )
+							QMessageBox.information(self, "消息提示", "格式转换失败")
 				elif file_ext == ".html":
 					res = Convertor.convert_to_pdf(file_path, 2)
 					if res:
@@ -1850,8 +1851,6 @@ if __name__ == "__main__":
 	window.show()
 	sys.exit(app.exec())
 
-
-
 # transfer_btn = QPushButton()
 # transfer_btn.setFixedSize(80, 25)
 # transfer_btn.setText("图片预处理")
@@ -1872,55 +1871,55 @@ if __name__ == "__main__":
 # transfer_btn.clicked.connect(self.image_trans)
 
 # # if len(selected_files) > 0:
-	# try:
-	# 	for file_path in selected_files:
-	# 		# file_path = selected_files[0]
-	# 		file_name = os.path.basename(file_path)
-	# 		base_name, original_ext = os.path.splitext(file_name)
-	# 		original_ext = original_ext.lstrip('.')  # 去掉点，得到 "jpg"
-	# 		# 创建 QImage 对象
-	# 		image = QImage(file_path)
-	# 		if image.isNull():
-	# 			QMessageBox.warning(self, "提示信息", "图片未成功加载!")
-	# 			return
-	#
-	# 		# 缩放图像
-	# 		scaled_image = image.scaled(
-	# 			int(900 * 0.8),
-	# 			int(740 * 0.8),
-	# 			Qt.AspectRatioMode.KeepAspectRatio,
-	# 			Qt.TransformationMode.SmoothTransformation
-	# 		)
-	# 		folder_path = r".\trans"
-	# 		os.makedirs(folder_path, exist_ok=True)
-	# 		# 保存图像
-	# 		output_ext = original_ext if original_ext.lower() in ['png', 'jpg', 'jpeg'] else 'png'
-	# 		output_file = os.path.join(folder_path, f"{base_name}_trans.{output_ext}")
-	# 		# 格式特殊处理
-	# 		quality = 90  # JPG 质量参数
-	# 		if output_ext.lower() in ['jpg', 'jpeg']:
-	# 			success = scaled_image.save(output_file, "JPEG", quality)
-	# 		else:
-	# 			success = scaled_image.save(output_file, output_ext.upper())
-	# 		if success:
-	# 			success_count += 1
-	# 		else:
-	# 			fail_list.append(f"{file_name} (保存失败)")
-	# except Exception as e:
-	# 	fail_list.append(f"{file_name} ({str(e)})")
-	#
-	# # 汇总显示结果
-	# msg = []
-	# if success_count > 0:
-	# 	msg.append(f"成功处理 {success_count} 张图片")
-	# if fail_list:
-	# 	msg.append("失败文件:\n" + "\n".join(fail_list))
-	#
-	# QMessageBox.information(
-	# 	self,
-	# 	"处理结果",
-	# 	"\n\n".join(msg) if msg else "没有选择任何文件"
-	# )
+# try:
+# 	for file_path in selected_files:
+# 		# file_path = selected_files[0]
+# 		file_name = os.path.basename(file_path)
+# 		base_name, original_ext = os.path.splitext(file_name)
+# 		original_ext = original_ext.lstrip('.')  # 去掉点，得到 "jpg"
+# 		# 创建 QImage 对象
+# 		image = QImage(file_path)
+# 		if image.isNull():
+# 			QMessageBox.warning(self, "提示信息", "图片未成功加载!")
+# 			return
+#
+# 		# 缩放图像
+# 		scaled_image = image.scaled(
+# 			int(900 * 0.8),
+# 			int(740 * 0.8),
+# 			Qt.AspectRatioMode.KeepAspectRatio,
+# 			Qt.TransformationMode.SmoothTransformation
+# 		)
+# 		folder_path = r".\trans"
+# 		os.makedirs(folder_path, exist_ok=True)
+# 		# 保存图像
+# 		output_ext = original_ext if original_ext.lower() in ['png', 'jpg', 'jpeg'] else 'png'
+# 		output_file = os.path.join(folder_path, f"{base_name}_trans.{output_ext}")
+# 		# 格式特殊处理
+# 		quality = 90  # JPG 质量参数
+# 		if output_ext.lower() in ['jpg', 'jpeg']:
+# 			success = scaled_image.save(output_file, "JPEG", quality)
+# 		else:
+# 			success = scaled_image.save(output_file, output_ext.upper())
+# 		if success:
+# 			success_count += 1
+# 		else:
+# 			fail_list.append(f"{file_name} (保存失败)")
+# except Exception as e:
+# 	fail_list.append(f"{file_name} ({str(e)})")
+#
+# # 汇总显示结果
+# msg = []
+# if success_count > 0:
+# 	msg.append(f"成功处理 {success_count} 张图片")
+# if fail_list:
+# 	msg.append("失败文件:\n" + "\n".join(fail_list))
+#
+# QMessageBox.information(
+# 	self,
+# 	"处理结果",
+# 	"\n\n".join(msg) if msg else "没有选择任何文件"
+# )
 # 创建文件对话框
 # file_dialog = QFileDialog()
 # file_dialog.setNameFilter("图片文件 (*.png *.jpg *.jpeg)")

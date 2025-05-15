@@ -74,7 +74,6 @@ class Convertor:
 					cells.name = 'Calibri'
 				else:
 					cells.name = run.font.name
-					print(run.font.name)
 				if run.font.size is None:
 					cells.size = 11
 				else:
@@ -86,7 +85,6 @@ class Convertor:
 					cells.italic = True
 				# 检查颜色（确保颜色已显式设置）
 				if run.font.color and run.font.color.rgb:
-					# font_colors.add(run.font.color.rgb)
 					cells.color = Convertor.rgb_to_hex(run.font.color.rgb)
 		return cells
 
@@ -112,7 +110,6 @@ class Convertor:
 		if not isinstance(rgb_color, RGBColor):
 			return None
 		rgb_values = str(rgb_color)
-		print(rgb_values)
 		return str('#' + rgb_values)
 
 	# 从 RGBColor 对象中提取 RGB 值
@@ -222,7 +219,8 @@ class Convertor:
 	def cell_style(style, cells):
 		if cells.color:
 			(r, g, b) = Convertor.hex_to_rgb(cells.color)
-			style.add('TEXTCOLOR', (cells.row - 1, cells.col - 1), (cells.row - 1, cells.col - 1), (r, g, b))
+			# style.add('TEXTCOLOR', (cells.row - 1, cells.col - 1), (cells.row - 1, cells.col - 1), (r, g, b))
+			style.add('TEXTCOLOR', (cells.col - 1, cells.row - 1), (cells.col - 1, cells.row - 1), (r, g, b))
 
 	@staticmethod
 	def word_to_html(list_cells):

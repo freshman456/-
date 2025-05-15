@@ -40,7 +40,7 @@ class CustomizeView(QGraphicsView):
 		# 转换为场景坐标
 		scene_pos = self.mapToScene(view_pos)
 		# 更新标签显示场景坐标
-		self.scene_coord_label.setText(f"Scene 坐标: ({scene_pos.x():.2f}, {scene_pos.y():.2f})")
+		self.scene_coord_label.setText(f"画布坐标: ({scene_pos.x():.2f}, {scene_pos.y():.2f})")
 		if isinstance(self.current_scene, CustomizeScene):
 			if self.current_rect_item is not None:
 				end_point = self.mapToScene(event.pos())
@@ -52,7 +52,6 @@ class CustomizeView(QGraphicsView):
 		if event.button() == Qt.MouseButton.LeftButton and self.dragging:
 			final_rect = self.current_rect_item.rect()
 			if final_rect.width() < 10 or final_rect.height() < 10:
-				print("矩形框太小 不与创建")
 				self.scene().removeItem(self.current_rect_item)
 			else:
 				self.current_rect_item.adjust_text_position()

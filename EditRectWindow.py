@@ -43,7 +43,7 @@ class EditRectWindow(QWidget):
 			}
 		""")
 		self.text_label = QLabel("单元格信息展示")
-		self.text_label.setFixedHeight(25)
+		self.text_label.setFixedHeight(34)
 		self.text_label.setWordWrap(True)  #
 
 		self.main_layout.addWidget(self.text_label_title)
@@ -139,7 +139,7 @@ class EditRectWindow(QWidget):
 		if viewText:
 			self.h_line = height
 			self.w_line = width
-			self.text_label.setText(f"宽度:{width}px, 高度:{height} 内容: {viewText}")
+			self.text_label.setText(f"宽度:{width}px, 高度:{height}\n内容: {viewText}")
 		if content is not None:
 			self.display_label.setPlainText(content)
 		self.content_edit.setFocus()

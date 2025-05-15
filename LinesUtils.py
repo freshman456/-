@@ -81,7 +81,7 @@ class LinesUtils:
 			count -= 1
 
 			if count == 0:
-				# 最后一行的话 取右下角的y作为结束的水平线的起始y值
+				# 最后一行的话 取左下角的y作为结束的水平线的起始y值
 				last_row = [row[7] for row in row]
 				start_y = min(last_row)
 				line.append(start_y)

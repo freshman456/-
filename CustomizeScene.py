@@ -12,7 +12,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from project.MovableLineItem import MovableLineItem
-from project.table_convertor import Convertor
+from project.TableConvertor import Convertor
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 
@@ -183,8 +183,8 @@ class CustomizeScene(QGraphicsScene):
 				# 获取场景边界和页面边界
 				scene_rect = self.sceneRect()
 				# 乘以小于1的数才能方法 因为后面/width /height
-				scene_rect.setWidth(self.width() * 0.9)
-				scene_rect.setHeight(self.height() * 0.9)
+				scene_rect.setWidth(self.width() * 0.92)
+				scene_rect.setHeight(self.height() * 0.92)
 
 				page_rect = printer.pageRect(QPrinter.Unit.Point)  # 显式指定单位为点
 
@@ -229,7 +229,6 @@ class CustomizeScene(QGraphicsScene):
 	def create_standard_pdf_table(self, file_name="output.pdf"):
 		Convertor.register_font()
 		folder_path = r"./output_pdf"
-		print(self.cells)
 		os.makedirs(folder_path, exist_ok=True)
 		full_path = os.path.join(folder_path, file_name)
 		cols = len(self.col_lines)
@@ -483,7 +482,6 @@ class CustomizeScene(QGraphicsScene):
 				folder_path = r".\output_html"
 				os.makedirs(folder_path, exist_ok=True)
 				filename = os.path.join(folder_path, file_name)
-				print(filename)
 				# 写入文件
 				with open(filename, 'w', encoding='utf-8') as f:
 					f.write('\n'.join(html))

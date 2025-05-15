@@ -1,6 +1,6 @@
 
 import numpy as np
-from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtGui import QImage
 from paddleocr import PaddleOCR
 
 
